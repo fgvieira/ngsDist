@@ -14,6 +14,7 @@ void init_pars(params *pars) {
   pars->score[0][0] = pars->score[1][1] = pars->score[2][2] = 0; 
   pars->score[0][1] = pars->score[1][0] = pars->score[1][2] = pars->score[2][1] = 0.5; 
   pars->score[0][2] = pars->score[2][0] = 1; 
+  pars->out_prefix = NULL;
   pars->n_threads = 1;
   pars->n_chunks = 0;
   pars->max_chunk_size = 10000;
@@ -34,6 +35,7 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
       {"n_sites", required_argument, NULL, 's'},
       {"call_geno", no_argument, NULL, 'G'},
       {"nuc_diff", no_argument, NULL, 'd'},
+      {"out", required_argument, NULL, 'o'},
       {"n_threads", required_argument, NULL, 'x'},
       {"chunk_size", required_argument, NULL, 'c'},
       {"version", no_argument, NULL, 'v'},
@@ -43,7 +45,7 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
     };
   
   int c = 0;
-  while ( (c = getopt_long_only(argc, argv, "g:Ln:s:Gdx:c:vV:S:", long_options, NULL)) != -1 )
+  while ( (c = getopt_long_only(argc, argv, "g:Ln:s:Gdo:x:c:vV:S:", long_options, NULL)) != -1 )
     switch (c) {
     case 'g':
       pars->in_geno = optarg;
@@ -62,6 +64,9 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
       break;
     case 'd':
       pars->score[1][1] = 0.5;
+      break;
+    case 'o':
+      pars->out_prefix = optarg;
       break;
     case 'x':
       pars->n_threads = atoi(optarg);

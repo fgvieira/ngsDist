@@ -40,8 +40,8 @@ int main (int argc, char** argv) {
 
   if( pars->verbose >= 1 ) {
     printf("==> Input Arguments:\n");
-    printf("\tgeno file: %s\n\tlog post prob: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tthreads: %d\n\tchunk size: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
-	   pars->in_geno, pars->in_log ? "true":"false", pars->n_ind, pars->n_sites, pars->call_geno ? "true":"false", pars->n_threads, pars->max_chunk_size, pars->version ? "true":"false", pars->verbose, pars->seed);
+    printf("\tgeno file: %s\n\tlog-scale: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tout prefix: %s\n\tthreads: %d\n\tchunk size: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
+	   pars->in_geno, pars->in_log ? "true":"false", pars->n_ind, pars->n_sites, pars->call_geno ? "true":"false", pars->out_prefix, pars->n_threads, pars->max_chunk_size, pars->version ? "true":"false", pars->verbose, pars->seed);
   }
   if( pars->verbose > 4 ) printf("==> Verbose values greater than 4 for debugging purpose only. Expect large amounts of info on screen\n");
 
@@ -87,9 +87,9 @@ int main (int argc, char** argv) {
     printf("==> GZIP input file (never BINARY)\n");
     pars->in_bin = false;
   }else if( pars->n_sites == st.st_size/sizeof(double)/pars->n_ind/N_GENO ){
-    printf("==> BINARY input file (always log)\n");
+    printf("==> BINARY input file (never log)\n");
     pars->in_bin = true;
-    pars->in_log = true;
+    pars->in_log = false;
   }else
     error("invalid/corrupt genotype input file!");
   
@@ -115,16 +115,26 @@ int main (int argc, char** argv) {
   double dist_matrix[pars->n_ind][pars->n_ind];
 
   for(uint64_t i1 = 0; i1 < pars->n_ind; i1++)
-    for(uint64_t i2 = 0; i2 < i1; i2++)
-      dist_matrix[i1][i2] = gen_dist(pars, i1, i2);
+    for(uint64_t i2 = 0; i2 < pars->n_ind; i2++)
+      if(i1 == i2)
+	dist_matrix[i1][i2] = i1;
+      else
+	dist_matrix[i1][i2] = gen_dist(pars, i1, i2);
 
 
 
   ///////////////////////////
   // Print Distance Matrix //
   ///////////////////////////
-  for(uint64_t i1 = 1; i1 < pars->n_ind; i1++)
-    printf("%s\n", merge(dist_matrix[i1], i1, "\t"));
+  FILE* out_fh = fopen( strcat(pars->out_prefix, ".dist"), "w");
+  if(out_fh == NULL)
+    error("cannot open output file!");
+
+  fprintf(out_fh, " %lu\n", pars->n_ind);
+  for(uint64_t i1 = 0; i1 < pars->n_ind; i1++)
+    fprintf(out_fh, "%s\n", merge(dist_matrix[i1], pars->n_ind, "\t"));
+
+  fclose(out_fh);
 
 
 

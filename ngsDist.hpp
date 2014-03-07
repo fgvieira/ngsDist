@@ -31,6 +31,7 @@ typedef struct {
   uint64_t n_sites;
   bool call_geno;
   double score[N_GENO][N_GENO];
+  char* out_prefix;
   uint n_threads;
   uint n_chunks;
   uint max_chunk_size;

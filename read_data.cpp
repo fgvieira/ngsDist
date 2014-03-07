@@ -15,9 +15,10 @@ int read_geno(params* pars){
 
   for(uint64_t s = 1; s <= pars->n_sites; s++){
     if(pars->in_bin){
-      for(uint64_t i = 0; i < pars->n_ind; i++)
+      for(uint64_t i = 0; i < pars->n_ind; i++){
 	if( gzread(in_geno_fh, pars->post_prob[i][s], N_GENO * sizeof(double)) != N_GENO * sizeof(double) )
 	  error("cannot read GENO file!");
+      }
     }
     else{
       if( gzgets(in_geno_fh, buf, BUFF_LEN) == NULL)
@@ -29,7 +30,7 @@ int read_geno(params* pars){
       
       for(uint64_t i = 0; i < pars->n_ind; i++)
 	for(uint64_t g = 0; g < N_GENO; g++)
-	  pars->post_prob[i][s][g] = pars->in_log ? t[i*N_GENO+g] : log(t[i*N_GENO+g]);
+	  pars->post_prob[i][s][g] = pars->in_log ? exp(t[i*N_GENO+g]) : t[i*N_GENO+g];
       
       delete [] t;
     }
