@@ -3,10 +3,12 @@
 
 
 void init_pars(params *pars) {
-  pars->in_geno = NULL;
+  pars->in_pp = NULL;
   pars->in_bin = false;
   pars->in_log = false;
   pars->post_prob = NULL;
+  pars->in_labels = NULL;
+  pars->ind_labels = NULL;
   pars->n_ind = 0;
   pars->n_sites = 0;
   pars->call_geno = false;
@@ -31,6 +33,7 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
     {
       {"geno", required_argument, NULL, 'g'},
       {"log", no_argument, NULL, 'L'},
+      {"labels", required_argument, NULL, 'l'},
       {"n_ind", required_argument, NULL, 'n'},
       {"n_sites", required_argument, NULL, 's'},
       {"call_geno", no_argument, NULL, 'G'},
@@ -45,13 +48,16 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
     };
   
   int c = 0;
-  while ( (c = getopt_long_only(argc, argv, "g:Ln:s:Gdo:x:c:vV:S:", long_options, NULL)) != -1 )
+  while ( (c = getopt_long_only(argc, argv, "g:Ll:n:s:Gdo:x:c:vV:S:", long_options, NULL)) != -1 )
     switch (c) {
     case 'g':
-      pars->in_geno = optarg;
+      pars->in_pp = optarg;
       break;
     case 'L':
       pars->in_log = true;
+      break;
+    case 'l':
+      pars->in_labels = optarg;
       break;
     case 'n':
       pars->n_ind = atoi(optarg);

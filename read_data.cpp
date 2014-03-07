@@ -9,19 +9,19 @@ int read_geno(params* pars){
   pars->post_prob = init_double(pars->n_ind, pars->n_sites+1, N_GENO, -INFINITY);
   
   // Open GENO file
-  gzFile in_geno_fh;
-  if( (in_geno_fh = gzopen(pars->in_geno, pars->in_bin ? "rb" : "r")) == NULL )
+  gzFile in_pp_fh = gzopen(pars->in_pp, pars->in_bin ? "rb" : "r");
+  if(in_pp_fh == NULL)
     error("cannot open genotype file!");
 
   for(uint64_t s = 1; s <= pars->n_sites; s++){
     if(pars->in_bin){
       for(uint64_t i = 0; i < pars->n_ind; i++){
-	if( gzread(in_geno_fh, pars->post_prob[i][s], N_GENO * sizeof(double)) != N_GENO * sizeof(double) )
+	if( gzread(in_pp_fh, pars->post_prob[i][s], N_GENO * sizeof(double)) != N_GENO * sizeof(double) )
 	  error("cannot read GENO file!");
       }
     }
     else{
-      if( gzgets(in_geno_fh, buf, BUFF_LEN) == NULL)
+      if( gzgets(in_pp_fh, buf, BUFF_LEN) == NULL)
 	error("cannot read GENO file!");
       
       double* t = NULL;
@@ -36,7 +36,7 @@ int read_geno(params* pars){
     }
   }
   
-  gzclose(in_geno_fh);
+  gzclose(in_pp_fh);
   delete [] buf;
   return 0;
 }
@@ -44,28 +44,14 @@ int read_geno(params* pars){
 
 
 
-uint64_t read_chunk(double** chunk_data, params* pars, uint64_t chunk) {
-  uint64_t total_elems_read = 0;
-  
-  if(chunk >= pars->n_chunks)
-    error("invalid chunk number!");
-  
-  // Define chunk start and end positions
-  uint64_t start_pos = chunk * pars->max_chunk_size;
-  uint64_t end_pos = start_pos + pars->max_chunk_size - 1;
-  if(end_pos >= pars->n_sites)	end_pos = pars->n_sites - 1;
-  uint64_t chunk_size = end_pos - start_pos + 1;
-  if( pars->verbose >= 6 ) printf("\tReading chunk %lu from position %lu to %lu (%lu)\n", chunk+1, start_pos, end_pos, chunk_size);
-  
-  // Read data from file
-  for(uint64_t c = 0; c < chunk_size; c++) {
-    //    chunk_data[c] = pars->post_prob[start_pos+c];
-    uint64_t elems_read = pars->n_ind * 3;
+int read_labels(params* pars){
+  FILE* in_labels_fh = fopen(pars->in_labels, "r");
+  if(in_labels_fh == NULL)
+    error("cannot open labels file!");
 
-    if( elems_read != pars->n_ind * 3 )
-      error("cannot read GLF file!");
-    total_elems_read += elems_read;
-  }
+  for(uint64_t i = 0; i < pars->n_ind; i++)
+    fgets(pars->ind_labels[i], BUFF_LEN, in_labels_fh);
 
-  return( total_elems_read/(pars->n_ind * 3) );
+  fclose(in_labels_fh);
+  return 0;
 }

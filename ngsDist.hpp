@@ -23,10 +23,12 @@ const uint64_t BUFF_LEN = 100000;
 
 // Struct to store all input arguments //GZIP
 typedef struct {
-  char* in_geno;
+  char* in_pp;
   bool in_bin;
   bool in_log;
   double*** post_prob;
+  char* in_labels;
+  char** ind_labels;
   uint64_t n_ind;
   uint64_t n_sites;
   bool call_geno;
@@ -48,4 +50,4 @@ int parse_cmd_args(int, char**, params*);
 
 // read_data.cpp
 int read_geno(params*);
-uint64_t read_chunk(double**, params*, uint64_t);
+int read_labels(params*);

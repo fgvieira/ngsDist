@@ -236,13 +236,21 @@ char* merge(double* array, uint64_t size, const char* sep){
 
 
 
+uint64_t* init_uint64(uint64_t A, uint64_t init){
+  uint64_t* ptr = new uint64_t[A];
+  for(uint64_t a = 0; a < A; a++)
+    ptr[a] = init;
+
+  return ptr;
+}
+
+
+
 uint64_t** init_uint64(uint64_t A, uint64_t B, uint64_t init){
   uint64_t** ptr = new uint64_t*[A];
-  for(uint64_t a = 0; a < A; a++){
-    ptr[a] = new uint64_t[B];
-    for(uint64_t b = 0; b < B; b++)
-      ptr[a][b] = init;
-  }
+  for(uint64_t a = 0; a < A; a++)
+    ptr[a] = init_uint64(B, init);
+
   return ptr;
 }
 
@@ -252,6 +260,7 @@ double* init_double(uint64_t A, double init){
   double* ptr = new double[A];
   for(uint64_t a = 0; a < A; a++)
     ptr[a] = init;
+
   return ptr;
 }
 
@@ -259,11 +268,9 @@ double* init_double(uint64_t A, double init){
 
 double** init_double(uint64_t A, uint64_t B, double init){
   double** ptr = new double*[A];
-  for(uint64_t a = 0; a < A; a++){
-    ptr[a] = new double[B];
-    for(uint64_t b = 0; b < B; b++)
-      ptr[a][b] = init;
-  }
+  for(uint64_t a = 0; a < A; a++)
+    ptr[a] = init_double(B, init);
+
   return ptr;
 }
 
@@ -271,14 +278,38 @@ double** init_double(uint64_t A, uint64_t B, double init){
 
 double*** init_double(uint64_t A, uint64_t B, uint64_t C, double init){
   double*** ptr = new double**[A];
+  for(uint64_t a = 0; a < A; a++)
+    ptr[a] = init_double(B, C, init);
+
+  return ptr;
+}
+
+
+
+char* init_char(uint64_t A, const char* init){
+  char* ptr = new char[A];
+  memset(ptr, '\0', A*sizeof(char));
+
+  strcpy(ptr, init);
+
+  return ptr;
+}
+
+
+
+char** init_char(uint64_t A, uint64_t B, const char* init){
+  char** ptr = new char*[A];
   for(uint64_t a = 0; a < A; a++){
-    ptr[a] = new double*[B];
-    for(uint64_t b = 0; b < B; b++){
-      ptr[a][b] = new double[C];
-      for(uint64_t c = 0; c < C; c++)
-	ptr[a][b][c] = init;
-    }
+    char init_tmp[1000];
+    strcpy(init_tmp, init);
+
+    char* pch = strchr(init_tmp, '#');
+    if(pch)
+      sprintf(pch, "%lu", a);
+
+    ptr[a] = init_char(B, init_tmp);
   }
+
   return ptr;
 }
 

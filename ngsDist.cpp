@@ -40,8 +40,8 @@ int main (int argc, char** argv) {
 
   if( pars->verbose >= 1 ) {
     printf("==> Input Arguments:\n");
-    printf("\tgeno file: %s\n\tlog-scale: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tout prefix: %s\n\tthreads: %d\n\tchunk size: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
-	   pars->in_geno, pars->in_log ? "true":"false", pars->n_ind, pars->n_sites, pars->call_geno ? "true":"false", pars->out_prefix, pars->n_threads, pars->max_chunk_size, pars->version ? "true":"false", pars->verbose, pars->seed);
+    printf("\tgeno file: %s\n\tlog-scale: %s\n\tlabels file: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tout prefix: %s\n\tthreads: %d\n\tchunk size: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
+	   pars->in_pp, pars->in_log ? "true":"false", pars->in_labels, pars->n_ind, pars->n_sites, pars->call_geno ? "true":"false", pars->out_prefix, pars->n_threads, pars->max_chunk_size, pars->version ? "true":"false", pars->verbose, pars->seed);
   }
   if( pars->verbose > 4 ) printf("==> Verbose values greater than 4 for debugging purpose only. Expect large amounts of info on screen\n");
 
@@ -50,7 +50,7 @@ int main (int argc, char** argv) {
   /////////////////////
   // Check Arguments //
   /////////////////////
-  if(pars->in_geno == NULL)
+  if(pars->in_pp == NULL)
     error("Genotype input file (-geno) missing!");
   if(pars->n_ind == 0)
     error("Number of individuals (-n_ind) missing!");
@@ -81,9 +81,9 @@ int main (int argc, char** argv) {
   ///////////////////////
   // Get file total size
   struct stat st;
-  if( stat(pars->in_geno, &st) != 0 )
+  if( stat(pars->in_pp, &st) != 0 )
     error("cannot check file size!");
-  if( strcmp(strrchr(pars->in_geno, '.'), ".gz") == 0 ){
+  if( strcmp(strrchr(pars->in_pp, '.'), ".gz") == 0 ){
     printf("==> GZIP input file (never BINARY)\n");
     pars->in_bin = false;
   }else if( pars->n_sites == st.st_size/sizeof(double)/pars->n_ind/N_GENO ){
@@ -98,6 +98,11 @@ int main (int argc, char** argv) {
   ////////////////////////////
   // Prepare initial values //
   ////////////////////////////
+  // Read labels files
+  pars->ind_labels = init_char(pars->n_ind, BUFF_LEN, (char*) "Ind_#");
+  if(pars->in_labels)
+    read_labels(pars);
+
   // Read from GENO file
   read_geno(pars);
   
@@ -117,7 +122,7 @@ int main (int argc, char** argv) {
   for(uint64_t i1 = 0; i1 < pars->n_ind; i1++)
     for(uint64_t i2 = 0; i2 < pars->n_ind; i2++)
       if(i1 == i2)
-	dist_matrix[i1][i2] = i1;
+	dist_matrix[i1][i2] = 0;
       else
 	dist_matrix[i1][i2] = gen_dist(pars, i1, i2);
 
@@ -131,8 +136,8 @@ int main (int argc, char** argv) {
     error("cannot open output file!");
 
   fprintf(out_fh, " %lu\n", pars->n_ind);
-  for(uint64_t i1 = 0; i1 < pars->n_ind; i1++)
-    fprintf(out_fh, "%s\n", merge(dist_matrix[i1], pars->n_ind, "\t"));
+  for(uint64_t i = 0; i < pars->n_ind; i++)
+    fprintf(out_fh, "%s\t%s\n", pars->ind_labels[i], merge(dist_matrix[i], pars->n_ind, "\t"));
 
   fclose(out_fh);
 
@@ -144,7 +149,7 @@ int main (int argc, char** argv) {
   if( pars->verbose >= 1 ) printf("Freeing memory...\n");
   // pars struct
   free_ptr((void***) pars->post_prob, pars->n_ind, pars->n_sites+1);
-  //free_ptr((void*) pars->in_geno);
+  //free_ptr((void*) pars->in_pp);
 
   if( pars->verbose >= 1 ) printf("Done!\n");
   delete pars;
