@@ -136,8 +136,11 @@ int main (int argc, char** argv) {
     error("cannot open output file!");
 
   fprintf(out_fh, " %lu\n", pars->n_ind);
-  for(uint64_t i = 0; i < pars->n_ind; i++)
-    fprintf(out_fh, "%s\t%s\n", pars->ind_labels[i], merge(dist_matrix[i], pars->n_ind, "\t"));
+  for(uint64_t i = 0; i < pars->n_ind; i++){
+    char* buf = merge(dist_matrix[i], pars->n_ind, "\t");
+    fprintf(out_fh, "%s\t%s\n", pars->ind_labels[i], buf);
+    delete [] buf;
+  }
 
   fclose(out_fh);
 
@@ -149,6 +152,7 @@ int main (int argc, char** argv) {
   if( pars->verbose >= 1 ) printf("Freeing memory...\n");
   // pars struct
   free_ptr((void***) pars->post_prob, pars->n_ind, pars->n_sites+1);
+  free_ptr((void**) pars->ind_labels, pars->n_ind);
   //free_ptr((void*) pars->in_pp);
 
   if( pars->verbose >= 1 ) printf("Done!\n");
@@ -164,8 +168,8 @@ double gen_dist(params* p, uint64_t i1, uint64_t i2){
   double dist = 0;
 
   for(uint64_t s = 1; s <= p->n_sites; s++)
-    for(uint64_t g1 = 0; g1 <= N_GENO; g1++)
-      for(uint64_t g2 = 0; g2 <= N_GENO; g2++)
+    for(uint64_t g1 = 0; g1 < N_GENO; g1++)
+      for(uint64_t g2 = 0; g2 < N_GENO; g2++)
 	dist += p->post_prob[i1][s][g1] * p->post_prob[i2][s][g2] * p->score[g1][g2];
 	  
   return dist/p->n_sites;
