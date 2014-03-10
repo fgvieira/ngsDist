@@ -60,8 +60,11 @@ int read_labels(params* pars){
   if(in_labels_fh == NULL)
     error("cannot open labels file!");
 
-  for(uint64_t i = 0; i < pars->n_ind; i++)
+  for(uint64_t i = 0; i < pars->n_ind; i++){
     fgets(pars->ind_labels[i], BUFF_LEN, in_labels_fh);
+    // Remove trailing newline
+    pars->ind_labels[i][strlen(pars->ind_labels[i])-1] = '\0';
+  }
 
   fclose(in_labels_fh);
   return 0;

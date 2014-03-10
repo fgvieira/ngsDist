@@ -38,12 +38,12 @@ int main (int argc, char** argv) {
     exit(0);
   }
 
-  if( pars->verbose >= 1 ) {
+  if(pars->verbose >= 1) {
     printf("==> Input Arguments:\n");
     printf("\tgeno file: %s\n\tlog-scale: %s\n\tlabels file: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tout prefix: %s\n\tthreads: %d\n\tchunk size: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
 	   pars->in_pp, pars->in_log ? "true":"false", pars->in_labels, pars->n_ind, pars->n_sites, pars->call_geno ? "true":"false", pars->out_prefix, pars->n_threads, pars->max_chunk_size, pars->version ? "true":"false", pars->verbose, pars->seed);
   }
-  if( pars->verbose > 4 ) printf("==> Verbose values greater than 4 for debugging purpose only. Expect large amounts of info on screen\n");
+  if(pars->verbose > 4) printf("==> Verbose values greater than 4 for debugging purpose only. Expect large amounts of info on screen\n");
 
 
 
@@ -99,11 +99,16 @@ int main (int argc, char** argv) {
   // Prepare initial values //
   ////////////////////////////
   // Read labels files
-  pars->ind_labels = init_char(pars->n_ind, BUFF_LEN, (char*) "Ind_#");
-  if(pars->in_labels)
+  pars->ind_labels = init_char(pars->n_ind, BUFF_LEN, (const char*) "Ind_#");
+  if(pars->in_labels){
+    if(pars->verbose >= 1)
+      printf("==> Reading labels\n");
     read_labels(pars);
+  }
 
   // Read from GENO file
+  if(pars->verbose >= 1)
+    printf("==> Reading genotype posterior probabilities\n");
   read_geno(pars);
   
   // Call genotypes
@@ -119,6 +124,9 @@ int main (int argc, char** argv) {
   //////////////////
   double dist_matrix[pars->n_ind][pars->n_ind];
 
+  if(pars->verbose >= 1)
+    printf("==> Calculating pairwise genetic distances\n");
+
   for(uint64_t i1 = 0; i1 < pars->n_ind; i1++)
     for(uint64_t i2 = 0; i2 < pars->n_ind; i2++)
       if(i1 == i2)
@@ -131,7 +139,10 @@ int main (int argc, char** argv) {
   ///////////////////////////
   // Print Distance Matrix //
   ///////////////////////////
-  FILE* out_fh = fopen( strcat(pars->out_prefix, ".dist"), "w");
+  if(pars->verbose >= 1)
+    printf("==> Printing distance matrix\n");
+
+  FILE* out_fh = fopen(strcat(pars->out_prefix, ".dist"), "w");
   if(out_fh == NULL)
     error("cannot open output file!");
 
@@ -149,13 +160,15 @@ int main (int argc, char** argv) {
   /////////////////
   // Free Memory //
   /////////////////
-  if( pars->verbose >= 1 ) printf("Freeing memory...\n");
+  if(pars->verbose >= 1)
+    printf("Freeing memory...\n");
   // pars struct
   free_ptr((void***) pars->post_prob, pars->n_ind, pars->n_sites+1);
   free_ptr((void**) pars->ind_labels, pars->n_ind);
   //free_ptr((void*) pars->in_pp);
 
-  if( pars->verbose >= 1 ) printf("Done!\n");
+  if(pars->verbose >= 1)
+    printf("Done!\n");
   delete pars;
 
   return 0;
