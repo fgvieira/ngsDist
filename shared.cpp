@@ -88,6 +88,10 @@ double logsum(double* a, uint64_t n){
   for(uint64_t i = 1; i < n; i++)
     M = max(a[i], M);
 
+  // If all elements -Inf, return -Inf
+  if(M == -INFINITY)
+    return(-INFINITY);
+
   for(uint64_t i = 0; i < n; i++)
     sum += exp(a[i] - M);
 
