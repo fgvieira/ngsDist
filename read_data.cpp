@@ -28,8 +28,11 @@ int read_geno(params* pars){
       uint64_t n_fields = split(buf, (const char*) " \t\r\n", &t);
       if(n_fields == pars->n_ind * N_GENO)
 	sleep(0);
+      else if(n_fields == pars->n_ind * N_GENO + 2)
+	// If ANGSD format (chr, pos, ...), skip first 2 columns
+	t += 2;
       else if(n_fields == pars->n_ind * N_GENO + 3)
-	// If needed, skip first 3 columns
+	// If BEAGLE format (id, allele1, allele2, ...), skip first 3 columns
 	t += 3;
       else
 	error("wrong GENO file format!");
