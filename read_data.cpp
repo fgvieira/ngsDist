@@ -25,9 +25,15 @@ int read_geno(params* pars){
 	error("cannot read GENO file!");
       
       double* t = NULL;
-      if( split(buf, (const char*) " \t\r\n", &t) != pars->n_ind * N_GENO )
+      uint64_t n_fields = split(buf, (const char*) " \t\r\n", &t);
+      if(n_fields == pars->n_ind * N_GENO)
+	sleep(0);
+      else if(n_fields == pars->n_ind * N_GENO + 3)
+	// If needed, skip first 3 columns
+	t += 3;
+      else
 	error("wrong GENO file format!");
-      
+
       for(uint64_t i = 0; i < pars->n_ind; i++)
 	for(uint64_t g = 0; g < N_GENO; g++)
 	  pars->post_prob[i][s][g] = pars->in_log ? exp(t[i*N_GENO+g]) : t[i*N_GENO+g];
