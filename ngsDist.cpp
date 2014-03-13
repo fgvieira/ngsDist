@@ -119,6 +119,7 @@ int main (int argc, char** argv) {
   //////////////////
   // Analyze Data //
   //////////////////
+  int comb_id = 0;
   double** dist_matrix = init_double(pars->n_ind, pars->n_ind, 0);
   // Create pthread structure
   pth_struct* pth = new pth_struct[n_comb];
@@ -132,7 +133,6 @@ int main (int argc, char** argv) {
 
   for(uint64_t i1 = 0; i1 < pars->n_ind; i1++)
     for(uint64_t i2 = i1+1; i2 < pars->n_ind; i2++){
-      int comb_id = pars->n_ind * i1 + i2;
       sem_wait(&pars->pth_sem);
       // Initialize pthread structure
       pth[comb_id].pars = pars;
@@ -142,6 +142,7 @@ int main (int argc, char** argv) {
       // Launch pthread
       if( pthread_create(&pth[comb_id].id, NULL, gen_dist_slave, (void*) &pth[comb_id]) )
 	error("cannot create thread!");
+      comb_id++;
     }
 
 
