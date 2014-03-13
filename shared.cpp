@@ -79,6 +79,18 @@ void call_geno(double* geno, int n_geno) {
 
 
 
+double factorial(uint64_t n)
+{
+  double fact = 1;
+  
+  for (uint64_t i = 1; i <= n; i++)
+    fact *= i;
+  
+  return fact;
+}
+
+
+
 //function does: log(exp(a)+exp(b)) while protecting for underflow
 double logsum(double* a, uint64_t n){
   // Find maximum value
@@ -126,12 +138,17 @@ split()
 uint64_t split(char* str, const char* sep, int** out){
   uint64_t i = strlen(str);
   int* buf = new int[i];
+  char* end_ptr;
 
   i = 0;
   char* pch = strtok(str, sep);
   while(pch != NULL){
-    buf[i++] = atoi(pch);
+    buf[i++] = strtol(pch, &end_ptr, 0);
     pch = strtok(NULL, sep);
+
+    // Check if a int
+    if(*end_ptr)
+      i--;
   }
 
   *out = new int[i]; // FGV: why the need for *out?!?!!?
@@ -145,11 +162,17 @@ uint64_t split(char* str, const char* sep, int** out){
 uint64_t split(char* str, const char* sep, float** out){
   uint64_t i = strlen(str);
   float* buf = new float[i];
+  char* end_ptr;
 
   i = 0;
   char* pch = strtok(str, sep);
   while(pch != NULL){
-    buf[i++] = atof(pch);
+    buf[i++] = strtof(pch, &end_ptr);
+
+    // Check if a float
+    if(*end_ptr || strlen(pch) <= 2)
+      i--;
+
     pch = strtok(NULL, sep);
   }
 
@@ -164,11 +187,17 @@ uint64_t split(char* str, const char* sep, float** out){
 uint64_t split(char* str, const char* sep, double** out){
   uint64_t i = strlen(str);
   double* buf = new double[i];
+  char* end_ptr;
 
   i = 0;
   char* pch = strtok(str, sep);
   while(pch != NULL){
-    buf[i++] = atof(pch);
+    buf[i++] = strtod(pch, &end_ptr);
+
+    // Check if a double
+    if(*end_ptr || strlen(pch) <= 2)
+      i--;
+
     pch = strtok(NULL, sep);
   }
 
@@ -200,7 +229,7 @@ uint64_t split(char* str, const char* sep, char*** out){
 
 
 
-char* merge(uint64_t* array, uint64_t size, const char* sep){
+char* join(uint64_t* array, uint64_t size, const char* sep){
   char* buf = new char[size*10000];
   
   sprintf(buf, "%lu", array[0]);
@@ -220,7 +249,7 @@ char* merge(uint64_t* array, uint64_t size, const char* sep){
 
 
 
-char* merge(double* array, uint64_t size, const char* sep){
+char* join(double* array, uint64_t size, const char* sep){
   char* buf = new char[size*10000];
   
   sprintf(buf, "%.10f", array[0]);

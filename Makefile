@@ -4,7 +4,7 @@ CXX=g++
 CFLAGS = -g -Wall
 #CFLAGS = -O3 -Wall
 DFLAGS = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
-LIB = -lz
+LIB = -lz -pthread
 
 all: ngsDist
 

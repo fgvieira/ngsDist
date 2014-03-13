@@ -3,10 +3,11 @@
 
 
 void init_pars(params *pars) {
-  pars->in_pp = NULL;
+  pars->in_geno = NULL;
   pars->in_bin = false;
+  pars->in_lkl = false;
   pars->in_log = false;
-  pars->post_prob = NULL;
+  pars->geno_pp = NULL;
   pars->in_labels = NULL;
   pars->ind_labels = NULL;
   pars->n_ind = 0;
@@ -32,8 +33,9 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
   static struct option long_options[] =
     {
       {"geno", required_argument, NULL, 'g'},
+      {"lkl", no_argument, NULL, 'l'},
       {"log", no_argument, NULL, 'L'},
-      {"labels", required_argument, NULL, 'l'},
+      {"labels", required_argument, NULL, 'y'},
       {"n_ind", required_argument, NULL, 'n'},
       {"n_sites", required_argument, NULL, 's'},
       {"call_geno", no_argument, NULL, 'G'},
@@ -48,15 +50,18 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
     };
   
   int c = 0;
-  while ( (c = getopt_long_only(argc, argv, "g:Ll:n:s:Gdo:x:c:vV:S:", long_options, NULL)) != -1 )
+  while ( (c = getopt_long_only(argc, argv, "g:lLy:n:s:Gdo:x:c:vV:S:", long_options, NULL)) != -1 )
     switch (c) {
     case 'g':
-      pars->in_pp = optarg;
+      pars->in_geno = optarg;
+      break;
+    case 'l':
+      pars->in_lkl = true;
       break;
     case 'L':
       pars->in_log = true;
       break;
-    case 'l':
+    case 'y':
       pars->in_labels = optarg;
       break;
     case 'n':
