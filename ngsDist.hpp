@@ -29,7 +29,7 @@ typedef struct {
   bool in_bin;
   bool in_lkl;
   bool in_log;
-  double*** geno_pp;
+  double*** geno_lkl;
   char* in_labels;
   char** ind_labels;
   uint64_t n_ind;
@@ -38,8 +38,6 @@ typedef struct {
   double score[N_GENO][N_GENO];
   char* out_prefix;
   uint n_threads;
-  uint n_chunks;
-  uint max_chunk_size;
   bool version;
   uint verbose;
   uint seed;

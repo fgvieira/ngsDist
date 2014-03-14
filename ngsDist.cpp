@@ -43,7 +43,8 @@ int main (int argc, char** argv) {
     printf("\tgeno file: %s\n\tlog-scale: %s\n\tlabels file: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tout prefix: %s\n\tthreads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
 	   pars->in_geno, pars->in_log ? "true":"false", pars->in_labels, pars->n_ind, pars->n_sites, pars->call_geno ? "true":"false", pars->out_prefix, pars->n_threads, pars->version ? "true":"false", pars->verbose, pars->seed);
   }
-  if(pars->verbose > 4) printf("==> Verbose values greater than 4 for debugging purpose only. Expect large amounts of info on screen\n");
+  if(pars->verbose >= 4)
+    printf("==> Verbose values greater than 4 for debugging purpose only. Expect large amounts of info on screen\n");
 
 
 
@@ -63,10 +64,12 @@ int main (int argc, char** argv) {
   // Adjust Parameters //
   ///////////////////////
   // Calculate total number of combinations
-  uint64_t n_comb = factorial(pars->n_ind)/(2*factorial(pars->n_ind - 2));
+  uint64_t n_comb = (pow(pars->n_ind, 2) - pars->n_ind) / 2;
+  if(pars->verbose >= 1)
+    printf("==> Analysis will be run in %lu combinations\n", n_comb);
   // Adjust thread number to chunks
   if(n_comb < pars->n_threads){
-    if( pars->verbose >= 1 )
+    if(pars->verbose >= 1)
       printf("==> Fewer combinations (%ld) than threads (%d). Reducing the number of threads...\n", n_comb, pars->n_threads);
     pars->n_threads = n_comb;
   }
@@ -112,14 +115,14 @@ int main (int argc, char** argv) {
   if(pars->call_geno)
     for(uint64_t i = 0; i < pars->n_ind; i++)
       for(uint64_t s = 1; s <= pars->n_sites; s++)
-	call_geno(pars->geno_pp[i][s], N_GENO);
+	call_geno(pars->geno_lkl[i][s], N_GENO);
 
   
 
   //////////////////
   // Analyze Data //
   //////////////////
-  int comb_id = 0;
+  uint64_t comb_id = 0;
   double** dist_matrix = init_double(pars->n_ind, pars->n_ind, 0);
   // Create pthread structure
   pth_struct* pth = new pth_struct[n_comb];
@@ -143,7 +146,13 @@ int main (int argc, char** argv) {
       if( pthread_create(&pth[comb_id].id, NULL, gen_dist_slave, (void*) &pth[comb_id]) )
 	error("cannot create thread!");
       comb_id++;
+
+      if(pars->verbose >= 5)
+	printf("> Launched thread for individuals %lu and %lu (comb %lu).\n", i1, i2, comb_id);
     }
+
+  if(n_comb != comb_id)
+    error("missing combinations!");
 
 
   
@@ -185,7 +194,7 @@ int main (int argc, char** argv) {
   free_ptr((void**) dist_matrix, pars->n_ind);
   delete [] pth;
   // pars struct
-  free_ptr((void***) pars->geno_pp, pars->n_ind, pars->n_sites+1);
+  free_ptr((void***) pars->geno_lkl, pars->n_ind, pars->n_sites+1);
   free_ptr((void**) pars->ind_labels, pars->n_ind);
   //free_ptr((void*) pars->in_geno);
 
@@ -208,18 +217,18 @@ double gen_dist(params* p, uint64_t i1, uint64_t i2){
 
   for(uint64_t s = 1; s <= p->n_sites; s++){
     double* sfs = init_double(dim, (double) 1/dim);
-    GL1.mat[0][0] = p->geno_pp[i1][s][0];
-    GL1.mat[0][1] = p->geno_pp[i1][s][1];
-    GL1.mat[0][2] = p->geno_pp[i1][s][2];
-    GL2.mat[0][0] = p->geno_pp[i2][s][0];
-    GL2.mat[0][1] = p->geno_pp[i2][s][1];
-    GL2.mat[0][2] = p->geno_pp[i2][s][2];
+    GL1.mat[0][0] = p->geno_lkl[i1][s][0];
+    GL1.mat[0][1] = p->geno_lkl[i1][s][1];
+    GL1.mat[0][2] = p->geno_lkl[i1][s][2];
+    GL2.mat[0][0] = p->geno_lkl[i2][s][0];
+    GL2.mat[0][1] = p->geno_lkl[i2][s][1];
+    GL2.mat[0][2] = p->geno_lkl[i2][s][2];
     em2(sfs, &GL1, &GL2, 0.001, 50, dim);
 
     for(uint64_t g1 = 0; g1 < N_GENO; g1++)
       for(uint64_t g2 = 0; g2 < N_GENO; g2++)
 	//dist += p->score[g1][g2] * sfs[3*g1+g2];
-	dist += p->geno_pp[i1][s][g1] * p->geno_pp[i2][s][g2] * p->score[g1][g2] * sfs[3*g1+g2];
+	dist += p->geno_lkl[i1][s][g1] * p->geno_lkl[i2][s][g2] * p->score[g1][g2] * sfs[3*g1+g2];
 
     free_ptr(sfs);
   }
@@ -233,6 +242,7 @@ double gen_dist(params* p, uint64_t i1, uint64_t i2){
 
 void* gen_dist_slave(void* pth){
   pth_struct* p = (pth_struct*) pth;
+
   p->dist_matrix[p->i1][p->i2] = p->dist_matrix[p->i2][p->i1] = gen_dist(p->pars, p->i1, p->i2);
 
   // Free one slot for another thread
