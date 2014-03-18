@@ -8,7 +8,7 @@ int read_geno(params* pars){
   uint64_t n_geno = (pars->in_lkl ? N_GENO : 1);
   double* t;
   double* ptr;
-  char* buf = init_char(BUFF_LEN, NULL);
+  char* buf = init_char(BUFF_LEN, '\0');
 
   // Allocate memory
   pars->geno_lkl = init_double(pars->n_ind, pars->n_sites+1, N_GENO, -INFINITY);
@@ -16,17 +16,17 @@ int read_geno(params* pars){
   // Open GENO file
   gzFile in_geno_fh = gzopen(pars->in_geno, pars->in_bin ? "rb" : "r");
   if(in_geno_fh == NULL)
-    error("cannot open genotype file!");
+    error(__FUNCTION__, "cannot open genotype file!");
 
   for(uint64_t s = 1; s <= pars->n_sites; s++){
     if(pars->in_bin){
       for(uint64_t i = 0; i < pars->n_ind; i++)
         if( gzread(in_geno_fh, pars->geno_lkl[i][s], N_GENO * sizeof(double)) != N_GENO * sizeof(double) )
-          error("cannot read GENO file!");
+          error(__FUNCTION__, "cannot read GENO file!");
     }
     else{
       if( gzgets(in_geno_fh, buf, BUFF_LEN) == NULL)
-        error("cannot read GENO file!");
+        error(__FUNCTION__, "cannot read GENO file!");
 
       if(pars->verbose >= 6)
 	printf("> Read line from GENO file: %s\n", buf);
@@ -44,7 +44,7 @@ int read_geno(params* pars){
       }
 
       if(n_fields < pars->n_ind * n_geno)
-        error("wrong GENO file format!");
+        error(__FUNCTION__, "wrong GENO file format!");
       
       // Use last "n_ind * n_geno" columns
       ptr = t + (n_fields - pars->n_ind * n_geno);
@@ -70,18 +70,3 @@ int read_geno(params* pars){
 
 
 // normalize GL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-int read_labels(params* pars){
-  FILE* in_labels_fh = fopen(pars->in_labels, "r");
-  if(in_labels_fh == NULL)
-    error("cannot open labels file!");
-
-  for(uint64_t i = 0; i < pars->n_ind; i++){
-    fgets(pars->ind_labels[i], BUFF_LEN, in_labels_fh);
-    // Remove trailing newline
-    pars->ind_labels[i][strlen(pars->ind_labels[i])-1] = '\0';
-  }
-
-  fclose(in_labels_fh);
-  return 0;
-}

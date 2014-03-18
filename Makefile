@@ -25,4 +25,4 @@ test:
 	@cd examples/; sh ./test.sh 2> /dev/null; cd ../
 
 clean:
-	@rm -f *~ *.o ngsDist #examples/testF.*
+	@rm -f *~ *.o ngsDist examples/testA_*

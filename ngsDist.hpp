@@ -22,7 +22,6 @@ extern bool SIG_COND;
 const uint64_t N_GENO = 3;
 const uint64_t BUFF_LEN = 100000;
 
-
 // Struct to store all input arguments //GZIP
 typedef struct {
   char* in_geno;

@@ -52,11 +52,11 @@ int main (int argc, char** argv) {
   // Check Arguments //
   /////////////////////
   if(pars->in_geno == NULL)
-    error("Genotype input file (-geno) missing!");
+    error(__FUNCTION__, "Genotype input file (-geno) missing!");
   if(pars->n_ind == 0)
-    error("Number of individuals (-n_ind) missing!");
+    error(__FUNCTION__, "Number of individuals (-n_ind) missing!");
   if(pars->n_sites == 0)
-    error("Number of sites (-n_sites) missing!");
+    error(__FUNCTION__, "Number of sites (-n_sites) missing!");
   
   
   
@@ -82,16 +82,18 @@ int main (int argc, char** argv) {
   // Get file total size
   struct stat st;
   if( stat(pars->in_geno, &st) != 0 )
-    error("cannot check file size!");
+    error(__FUNCTION__, "cannot check file size!");
   if( strcmp(strrchr(pars->in_geno, '.'), ".gz") == 0 ){
-    printf("==> GZIP input file (never BINARY)\n");
+    if(pars->verbose >= 1)
+      printf("==> GZIP input file (never BINARY)\n");
     pars->in_bin = false;
   }else if( pars->n_sites == st.st_size/sizeof(double)/pars->n_ind/N_GENO ){
-    printf("==> BINARY input file (never log)\n");
+    if(pars->verbose >= 1)
+      printf("==> BINARY input file (never log)\n");
     pars->in_bin = true;
     pars->in_log = false;
   }else
-    error("invalid/corrupt genotype input file!");
+    error(__FUNCTION__, "invalid/corrupt genotype input file!");
   
 
 
@@ -99,12 +101,31 @@ int main (int argc, char** argv) {
   // Prepare initial values //
   ////////////////////////////
   // Read labels files
-  pars->ind_labels = init_char(pars->n_ind, BUFF_LEN, (const char*) "Ind_#");
   if(pars->in_labels){
     if(pars->verbose >= 1)
       printf("==> Reading labels\n");
-    read_labels(pars);
+
+    int64_t ret = read_file(pars->in_labels, &pars->ind_labels, 1000);
+    if(pars->verbose >= 1)
+      printf("> Found %ld labels in file\n", ret);
+
+    if(ret == -1)
+      error(__FUNCTION__, "cannot open labels file!");
+    else if(ret != (int64_t) pars->n_ind)
+      error(__FUNCTION__, "wrong number of labels provided!");
+  }else{
+    pars->ind_labels = init_char(pars->n_ind, BUFF_LEN, (const char*) "Ind_#");
+    // Tweak initiation value (replace # by number)
+    for(uint64_t i = 0; i < pars->n_ind; i++){
+      char* pch = strchr(pars->ind_labels[i], '#');
+      if(pch)
+	sprintf(pch, "%lu", i);
+    }
   }
+  
+  if(pars->verbose >= 4)
+    for(uint64_t i = 0; i < pars->n_ind; i++)
+      printf("%s\n", pars->ind_labels[i]);
 
   // Read from GENO file
   if(pars->verbose >= 1)
@@ -129,7 +150,7 @@ int main (int argc, char** argv) {
 
   // Initialize semaphore
   if( sem_init(&pars->pth_sem, 0, pars->n_threads) )
-    error("cannot initialise pthread sempahore!");
+    error(__FUNCTION__, "cannot initialise pthread sempahore!");
 
   if(pars->verbose >= 1)
     printf("==> Calculating pairwise genetic distances\n");
@@ -144,7 +165,7 @@ int main (int argc, char** argv) {
       pth[comb_id].i2 = i2;
       // Launch pthread
       if( pthread_create(&pth[comb_id].id, NULL, gen_dist_slave, (void*) &pth[comb_id]) )
-	error("cannot create thread!");
+	error(__FUNCTION__, "cannot create thread!");
       comb_id++;
 
       if(pars->verbose >= 5)
@@ -152,7 +173,7 @@ int main (int argc, char** argv) {
     }
 
   if(n_comb != comb_id)
-    error("missing combinations!");
+    error(__FUNCTION__, "missing combinations!");
 
 
   
@@ -161,7 +182,7 @@ int main (int argc, char** argv) {
   //////////////////////////
   for(uint64_t i = 0; i < n_comb; i++)
     if(pthread_join(pth[i].id, NULL))
-      error("cannot join pthread!");
+      error(__FUNCTION__, "cannot join pthread!");
 
 
 
@@ -173,7 +194,7 @@ int main (int argc, char** argv) {
 
   FILE* out_fh = fopen(strcat(pars->out_prefix, ".dist"), "w");
   if(out_fh == NULL)
-    error("cannot open output file!");
+    error(__FUNCTION__, "cannot open output file!");
 
   fprintf(out_fh, " %lu\n", pars->n_ind);
   for(uint64_t i = 0; i < pars->n_ind; i++){
@@ -191,6 +212,7 @@ int main (int argc, char** argv) {
   /////////////////
   if(pars->verbose >= 1)
     printf("====> Freeing memory...\n");
+
   free_ptr((void**) dist_matrix, pars->n_ind);
   delete [] pth;
   // pars struct
@@ -227,8 +249,8 @@ double gen_dist(params* p, uint64_t i1, uint64_t i2){
 
     for(uint64_t g1 = 0; g1 < N_GENO; g1++)
       for(uint64_t g2 = 0; g2 < N_GENO; g2++)
-	//dist += p->score[g1][g2] * sfs[3*g1+g2];
-	dist += p->geno_lkl[i1][s][g1] * p->geno_lkl[i2][s][g2] * p->score[g1][g2] * sfs[3*g1+g2];
+	dist += p->score[g1][g2] * sfs[3*g1+g2];
+        //dist += p->geno_lkl[i1][s][g1] * p->geno_lkl[i2][s][g2] * p->score[g1][g2] * sfs[3*g1+g2];
 
     free_ptr(sfs);
   }
