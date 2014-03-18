@@ -19,7 +19,6 @@
  *
 */
 
-#include <sys/stat.h>
 #include "ngsDist.hpp"
 #include "emOptim2.cpp"
 
