@@ -132,11 +132,15 @@ int main (int argc, char** argv) {
     printf("==> Reading genotype posterior probabilities\n");
   pars->geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_lkl, pars->n_ind, pars->n_sites);
   
-  // Call genotypes
-  if(pars->call_geno)
-    for(uint64_t i = 0; i < pars->n_ind; i++)
-      for(uint64_t s = 1; s <= pars->n_sites; s++)
-	call_geno(pars->geno_lkl[i][s], N_GENO);
+  for(uint64_t i = 0; i < pars->n_ind; i++)
+    for(uint64_t s = 1; s <= pars->n_sites; s++){
+      // Call genotypes
+      if(pars->call_geno)
+	call_geno(pars->geno_lkl[i][s], N_GENO, pars->in_log);
+      // Convert space
+      if(pars->in_log)
+	conv_space(pars->geno_lkl[i][s], N_GENO, exp);
+    }
 
   
 

@@ -68,16 +68,23 @@ int array_max_pos(double* array, int size) {
 
 
 
-void call_geno(double* geno, int n_geno) {
-
+void call_geno(double *geno, int n_geno, bool log_scale) {
   int max_pos = array_max_pos(geno, n_geno);
     
   for (int g = 0; g < n_geno; g++)
-    geno[g] = -INFINITY;
+    geno[g] = 0;
+  geno[max_pos] = 1;
 
-  geno[max_pos] = log(1);
+  if(log_scale)
+    conv_space(geno, n_geno, log);
 }
 
+
+
+void conv_space(double *geno, int n_geno, double (*func)(double)) {
+  for (int g = 0; g < n_geno; g++)
+    geno[g] = func(geno[g]);
+}
 
 
 
