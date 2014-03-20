@@ -20,6 +20,7 @@
 */
 
 #include "ngsDist.hpp"
+#include "read_data.cpp"
 #include "emOptim2.cpp"
 
 char const* version = "0.0.1b";
@@ -129,7 +130,7 @@ int main (int argc, char** argv) {
   // Read from GENO file
   if(pars->verbose >= 1)
     printf("==> Reading genotype posterior probabilities\n");
-  read_geno(pars);
+  pars->geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_lkl, pars->n_ind, pars->n_sites);
   
   // Call genotypes
   if(pars->call_geno)

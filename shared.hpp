@@ -18,6 +18,7 @@ void call_geno(double*, int);
 double logsum(double*, uint64_t);
 double logsum2(double, double);
 double logsum3(double, double, double);
+void chomp(char*);
 int64_t read_file(char*, char***, uint64_t);
 uint64_t split(char*, const char*, int**);
 uint64_t split(char*, const char*, float**);
