@@ -19,7 +19,7 @@ ngsDist: ngsDist.cpp parse_args.o shared.o
 	$(CXX) $(CFLAGS) $(DFLAGS) ngsDist.cpp parse_args.o shared.o $(LIB) -o ngsDist
 
 test:
-	@cd examples/; sh ./test.sh 2> /dev/null; cd ../
+	@cd examples/; bash test.sh 2> test.log; cd ../
 
 clean:
 	@rm -f *~ *.o ngsDist examples/testA_*
