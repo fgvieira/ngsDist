@@ -43,7 +43,7 @@ int main (int argc, char** argv) {
     printf("\tgeno file: %s\n\tlog-scale: %s\n\tlabels file: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tout prefix: %s\n\tthreads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
 	   pars->in_geno, pars->in_log ? "true":"false", pars->in_labels, pars->n_ind, pars->n_sites, pars->call_geno ? "true":"false", pars->out_prefix, pars->n_threads, pars->version ? "true":"false", pars->verbose, pars->seed);
   }
-  if(pars->verbose >= 4)
+  if(pars->verbose > 4)
     printf("==> Verbose values greater than 4 for debugging purpose only. Expect large amounts of info on screen\n");
 
 
@@ -162,18 +162,21 @@ int main (int argc, char** argv) {
   for(uint64_t i1 = 0; i1 < pars->n_ind; i1++)
     for(uint64_t i2 = i1+1; i2 < pars->n_ind; i2++){
       sem_wait(&pars->pth_sem);
+      // Initialize and set pthread detached attribute
+      pthread_attr_init(&pth[comb_id].attr);
+      pthread_attr_setdetachstate(&pth[comb_id].attr, PTHREAD_CREATE_DETACHED);
       // Initialize pthread structure
       pth[comb_id].pars = pars;
       pth[comb_id].dist_matrix = dist_matrix;
       pth[comb_id].i1 = i1;
       pth[comb_id].i2 = i2;
       // Launch pthread
-      if( pthread_create(&pth[comb_id].id, NULL, gen_dist_slave, (void*) &pth[comb_id]) )
+      if( pthread_create(&pth[comb_id].id, &pth[comb_id].attr, gen_dist_slave, (void*) &pth[comb_id]) )
 	error(__FUNCTION__, "cannot create thread!");
       comb_id++;
 
       if(pars->verbose >= 5)
-	printf("> Launched thread for individuals %lu and %lu (comb %lu).\n", i1, i2, comb_id);
+	printf("> Launched thread for individuals %lu and %lu (comb# %lu).\n", i1, i2, comb_id);
     }
 
   if(n_comb != comb_id)
@@ -184,9 +187,11 @@ int main (int argc, char** argv) {
   //////////////////////////
   // Wait for all threads //
   //////////////////////////
-  for(uint64_t i = 0; i < n_comb; i++)
-    if(pthread_join(pth[i].id, NULL))
-      error(__FUNCTION__, "cannot join pthread!");
+  int n_running_pthreads = 0;
+  while(n_running_pthreads - pars->n_threads){
+    sem_getvalue(&pars->pth_sem, &n_running_pthreads);
+    sleep(1);
+  }
 
 
 

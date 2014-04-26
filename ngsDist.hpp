@@ -37,6 +37,7 @@ typedef struct {
 // Pthread structure
 typedef struct {
   pthread_t id;
+  pthread_attr_t attr;
   params* pars;
   double** dist_matrix;
   uint64_t i1;
