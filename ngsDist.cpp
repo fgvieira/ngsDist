@@ -89,9 +89,8 @@ int main (int argc, char** argv) {
     pars->in_bin = false;
   }else if( pars->n_sites == st.st_size/sizeof(double)/pars->n_ind/N_GENO ){
     if(pars->verbose >= 1)
-      printf("==> BINARY input file (never log)\n");
+      printf("==> BINARY input file\n");
     pars->in_bin = true;
-    pars->in_log = false;
   }else
     error(__FUNCTION__, "invalid/corrupt genotype input file!");
   
