@@ -40,8 +40,8 @@ int main (int argc, char** argv) {
 
   if(pars->verbose >= 1) {
     printf("==> Input Arguments:\n");
-    printf("\tgeno file: %s\n\tlog-scale: %s\n\tlabels file: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tout prefix: %s\n\tthreads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
-	   pars->in_geno, pars->in_log ? "true":"false", pars->in_labels, pars->n_ind, pars->n_sites, pars->call_geno ? "true":"false", pars->out_prefix, pars->n_threads, pars->version ? "true":"false", pars->verbose, pars->seed);
+    printf("\tgeno file: %s\n\tlog-scale: %s\n\tlabels file: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tn_boot_rep: %lu\n\tcall_geno: %s\n\tout prefix: %s\n\tthreads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
+	   pars->in_geno, pars->in_log ? "true":"false", pars->in_labels, pars->n_ind, pars->n_sites, pars->n_boot_rep, pars->call_geno ? "true":"false", pars->out_prefix, pars->n_threads, pars->version ? "true":"false", pars->verbose, pars->seed);
   }
   if(pars->verbose > 4)
     printf("==> Verbose values greater than 4 for debugging purpose only. Expect large amounts of info on screen\n");
@@ -129,88 +129,126 @@ int main (int argc, char** argv) {
   // Read from GENO file
   if(pars->verbose >= 1)
     printf("==> Reading genotype posterior probabilities\n");
-  pars->geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_lkl, pars->n_ind, pars->n_sites);
+  pars->in_geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_lkl, pars->n_ind, pars->n_sites);
   
+  // Initialize geno_lkl pointers
+  pars->geno_lkl = new double**[pars->n_ind];
+  for(uint64_t i = 0; i < pars->n_ind; i++)
+    pars->geno_lkl[i] = new double*[pars->n_sites+1];
+
   for(uint64_t i = 0; i < pars->n_ind; i++)
     for(uint64_t s = 1; s <= pars->n_sites; s++){
       // Call genotypes
       if(pars->call_geno)
-	call_geno(pars->geno_lkl[i][s], N_GENO, pars->in_log);
+	call_geno(pars->in_geno_lkl[i][s], N_GENO, pars->in_log);
       // Convert space
       if(pars->in_log)
-	conv_space(pars->geno_lkl[i][s], N_GENO, exp);
+	conv_space(pars->in_geno_lkl[i][s], N_GENO, exp);
     }
 
-  
+ 
+
+  //////////////////////
+  // Open output file //
+  //////////////////////
+  FILE* out_fh = fopen(strcat(pars->out_prefix, ".dist"), "w");
+  if(out_fh == NULL)
+    error(__FUNCTION__, "cannot open output file!");
+ 
+
 
   //////////////////
   // Analyze Data //
   //////////////////
   uint64_t comb_id = 0;
   double** dist_matrix = init_double(pars->n_ind, pars->n_ind, 0);
-  // Create pthread structure
+  // Create pthread structure array
   pth_struct* pth = new pth_struct[n_comb];
+  // Initialize common pthread elements
+  for(comb_id = 0; comb_id < n_comb; comb_id++){
+    // Initialize and set pthread detached attribute
+    pthread_attr_init(&pth[comb_id].attr);
+    pthread_attr_setdetachstate(&pth[comb_id].attr, PTHREAD_CREATE_DETACHED);
+    // Initialize pars and distance matrix pointers
+    pth[comb_id].pars = pars;
+    pth[comb_id].dist_matrix = dist_matrix;
+  }
 
   // Initialize semaphore
   if( sem_init(&pars->pth_sem, 0, pars->n_threads) )
     error(__FUNCTION__, "cannot initialise pthread sempahore!");
 
-  if(pars->verbose >= 1)
-    printf("==> Calculating pairwise genetic distances\n");
+  // Loop for bootstrap analyses
+  for(uint64_t rep = 0; rep <= pars->n_boot_rep; rep++){
+    comb_id = 0;
+    if(rep == 0){
+      // Full dataset analyses
+      if(pars->verbose >= 1)
+	printf("==> Analyzing full dataset...\n");
 
-  for(uint64_t i1 = 0; i1 < pars->n_ind; i1++)
-    for(uint64_t i2 = i1+1; i2 < pars->n_ind; i2++){
-      sem_wait(&pars->pth_sem);
-      // Initialize and set pthread detached attribute
-      pthread_attr_init(&pth[comb_id].attr);
-      pthread_attr_setdetachstate(&pth[comb_id].attr, PTHREAD_CREATE_DETACHED);
-      // Initialize pthread structure
-      pth[comb_id].pars = pars;
-      pth[comb_id].dist_matrix = dist_matrix;
-      pth[comb_id].i1 = i1;
-      pth[comb_id].i2 = i2;
-      // Launch pthread
-      if( pthread_create(&pth[comb_id].id, &pth[comb_id].attr, gen_dist_slave, (void*) &pth[comb_id]) )
-	error(__FUNCTION__, "cannot create thread!");
-      comb_id++;
+      // Map in_geno_lkl data to geno_lkl
+      for(uint64_t i = 0; i < pars->n_ind; i++)
+	for(uint64_t s = 1; s <= pars->n_sites; s++)
+	  pars->geno_lkl[i][s] = pars->in_geno_lkl[i][s];
+    }else{
+      // Bootstrap analyses
+      if(pars->verbose >= 1)
+	printf("==> Analyzing bootstrap replicate %lu ...\n", rep);
 
-      if(pars->verbose >= 5)
-	printf("> Launched thread for individuals %lu and %lu (comb# %lu).\n", i1, i2, comb_id);
+      // Randomly map, with replacement, in_geno_lkl to geno_lkl
+      for(uint64_t i = 0; i < pars->n_ind; i++)
+        for(uint64_t s = 1; s <= pars->n_sites; s++)
+          pars->geno_lkl[i][s] = pars->in_geno_lkl[i][(int) ceil(rnd(0,pars->n_sites,pars->seed))];
     }
+    if(pars->verbose >= 2)
+      printf("> Calculating pairwise genetic distances\n");
 
-  if(n_comb != comb_id)
-    error(__FUNCTION__, "missing combinations!");
+    for(uint64_t i1 = 0; i1 < pars->n_ind; i1++)
+      for(uint64_t i2 = i1+1; i2 < pars->n_ind; i2++){
+	sem_wait(&pars->pth_sem);
+	// Set which individuals to analyze
+	pth[comb_id].i1 = i1;
+	pth[comb_id].i2 = i2;
+	// Launch pthread
+	if( pthread_create(&pth[comb_id].id, &pth[comb_id].attr, gen_dist_slave, (void*) &pth[comb_id]) )
+	  error(__FUNCTION__, "cannot create thread!");
+
+	comb_id++;
+
+	if(pars->verbose >= 5)
+	  printf("> Launched thread for individuals %lu and %lu (comb# %lu).\n", i1, i2, comb_id);
+      }
+
+    if(n_comb != comb_id)
+      error(__FUNCTION__, "some combinations are missing!");
 
 
   
-  //////////////////////////
-  // Wait for all threads //
-  //////////////////////////
-  int n_running_pthreads = 0;
-  while(n_running_pthreads - pars->n_threads){
-    sem_getvalue(&pars->pth_sem, &n_running_pthreads);
-    sleep(1);
+    //////////////////////////
+    // Wait for all threads //
+    //////////////////////////
+    int n_running_pthreads = 0;
+    while(n_running_pthreads - pars->n_threads){
+      sem_getvalue(&pars->pth_sem, &n_running_pthreads);
+      sleep(1);
+    }
+
+
+
+    ///////////////////////////
+    // Print Distance Matrix //
+    ///////////////////////////
+    if(pars->verbose >= 2)
+      printf("> Printing distance matrix\n");
+
+    fprintf(out_fh, "\n%lu\n", pars->n_ind);
+    for(uint64_t i = 0; i < pars->n_ind; i++){
+      char* buf = join(dist_matrix[i], pars->n_ind, "\t");
+      fprintf(out_fh, "%s\n%s\n", pars->ind_labels[i], buf);
+      delete [] buf;
+    }
+
   }
-
-
-
-  ///////////////////////////
-  // Print Distance Matrix //
-  ///////////////////////////
-  if(pars->verbose >= 1)
-    printf("==> Printing distance matrix\n");
-
-  FILE* out_fh = fopen(strcat(pars->out_prefix, ".dist"), "w");
-  if(out_fh == NULL)
-    error(__FUNCTION__, "cannot open output file!");
-
-  fprintf(out_fh, " %lu\n", pars->n_ind);
-  for(uint64_t i = 0; i < pars->n_ind; i++){
-    char* buf = join(dist_matrix[i], pars->n_ind, "\t");
-    fprintf(out_fh, "%s\t%s\n", pars->ind_labels[i], buf);
-    delete [] buf;
-  }
-
   fclose(out_fh);
 
 
@@ -224,7 +262,7 @@ int main (int argc, char** argv) {
   free_ptr((void**) dist_matrix, pars->n_ind);
   delete [] pth;
   // pars struct
-  free_ptr((void***) pars->geno_lkl, pars->n_ind, pars->n_sites+1);
+  free_ptr((void***) pars->in_geno_lkl, pars->n_ind, pars->n_sites+1);
   free_ptr((void**) pars->ind_labels, pars->n_ind);
   //free_ptr((void*) pars->in_geno);
 
@@ -277,7 +315,7 @@ void* gen_dist_slave(void* pth){
 
   // Free one slot for another thread
   if(sem_post(&p->pars->pth_sem))
-    printf("WARN: semaphore post failed!\n");
+    error(__FUNCTION__, "semaphore post failed");
 
   // Debug
   if(p->pars->verbose >= 6){

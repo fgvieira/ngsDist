@@ -18,11 +18,13 @@ typedef struct {
   bool in_bin;
   bool in_lkl;
   bool in_log;
+  double*** in_geno_lkl;
   double*** geno_lkl;
   char* in_labels;
   char** ind_labels;
   uint64_t n_ind;
   uint64_t n_sites;
+  uint64_t n_boot_rep;
   bool call_geno;
   double score[N_GENO][N_GENO];
   char* out_prefix;

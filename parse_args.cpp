@@ -7,11 +7,12 @@ void init_pars(params *pars) {
   pars->in_bin = false;
   pars->in_lkl = false;
   pars->in_log = false;
-  pars->geno_lkl = NULL;
+  pars->in_geno_lkl = NULL;
   pars->in_labels = NULL;
   pars->ind_labels = NULL;
   pars->n_ind = 0;
   pars->n_sites = 0;
+  pars->n_boot_rep = 0;
   pars->call_geno = false;
   // Distance score matrix based on Eq 8.1 from Gronau et al 2011 and Del Vecchyo et al. 2014
   pars->score[0][0] = pars->score[1][1] = pars->score[2][2] = 0; 
@@ -36,6 +37,7 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
       {"labels", required_argument, NULL, 'y'},
       {"n_ind", required_argument, NULL, 'n'},
       {"n_sites", required_argument, NULL, 's'},
+      {"n_boot_rep", required_argument, NULL, 'b'},
       {"call_geno", no_argument, NULL, 'G'},
       {"nuc_diff", no_argument, NULL, 'd'},
       {"out", required_argument, NULL, 'o'},
@@ -47,7 +49,7 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
     };
   
   int c = 0;
-  while ( (c = getopt_long_only(argc, argv, "g:lLy:n:s:Gdo:x:vV:S:", long_options, NULL)) != -1 )
+  while ( (c = getopt_long_only(argc, argv, "g:lLy:n:s:b:Gdo:x:vV:S:", long_options, NULL)) != -1 )
     switch (c) {
     case 'g':
       pars->in_geno = optarg;
@@ -66,6 +68,9 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
       break;
     case 's':
       pars->n_sites = atoi(optarg);
+      break;
+    case 'b':
+      pars->n_boot_rep = atoi(optarg);
       break;
     case 'G':
       pars->call_geno = true;

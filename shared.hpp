@@ -14,6 +14,7 @@ void handler(int);
 void catch_SIG();
 double check_interv(double, bool);
 int array_max_pos(double*, int);
+double rnd(double, double, uint64_t);
 void call_geno(double*, int, bool);
 void conv_space(double*, int, double (*func)(double));
 double logsum(double*, uint64_t);

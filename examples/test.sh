@@ -9,10 +9,10 @@ rm testA_*
 ##### Genotypes' likelihood and posterior probabilities
 $ANGSD/angsd -sim1 $SIM_DATA/testA.glf.gz -nInd 24 -doMajorMinor 1 -doPost 1 -doMaf 2 -doGeno 32 -out testA_32
 gunzip testA_32.geno.gz
-../ngsDist -g testA_32.geno -n 24 -s 10000 -o testA_32 -lkl -n_threads 10 -verbose 0 -labels testA.labels
+../ngsDist -n_threads 10 -seed 12345 -verbose 0 -g testA_32.geno -lkl -n 24 -s 10000 -labels testA.labels -b 5 -o testA_32
 
 $ANGSD/angsd -sim1 $SIM_DATA/testA.glf.gz -nInd 24 -doMajorMinor 1 -doPost 1 -doMaf 2 -doGeno 8 -out testA_8
-../ngsDist -g testA_8.geno.gz -n 24 -s 10000 -o testA_8 -lkl -n_threads 10 -verbose 0 -labels testA.labels
+../ngsDist -n_threads 10 -seed 12345 -verbose 0 -g testA_8.geno.gz -lkl -n 24 -s 10000 -labels testA.labels -b 5 -o testA_8
 
 
 
