@@ -1,6 +1,6 @@
 # ngsDist
 
-ngsDist is a program to estimate pairwise genetic distances directly from low genotype likelihoods, taking the uncertainty of genotype's assignation into account.
+`ngsDist` is a program to estimate pairwise genetic distances directly from low genotype likelihoods, taking the uncertainty of genotype's assignation into account.
 
 
 

@@ -33,6 +33,7 @@ int main (int argc, char** argv) {
   params* pars = new params;
   init_pars(pars);
   parse_cmd_args(argc, argv, pars);
+
   if( pars->version ) {
     printf("ngsDist v%s\nCompiled on %s @ %s", version, __DATE__, __TIME__);
     exit(0);
@@ -99,7 +100,7 @@ int main (int argc, char** argv) {
   ////////////////////////////
   // Prepare initial values //
   ////////////////////////////
-  // Read labels files
+  // Read labels file
   if(pars->in_labels){
     if(pars->verbose >= 1)
       printf("==> Reading labels\n");
@@ -146,6 +147,10 @@ int main (int argc, char** argv) {
 	conv_space(pars->in_geno_lkl[i][s], N_GENO, exp);
     }
 
+  // Initialize random number generator
+  gsl_rng* rnd_gen = gsl_rng_alloc(gsl_rng_taus);
+  gsl_rng_set(rnd_gen, pars->seed);
+
  
 
   //////////////////////
@@ -181,6 +186,7 @@ int main (int argc, char** argv) {
   // Loop for bootstrap analyses
   for(uint64_t rep = 0; rep <= pars->n_boot_rep; rep++){
     comb_id = 0;
+
     if(rep == 0){
       // Full dataset analyses
       if(pars->verbose >= 1)
@@ -198,8 +204,9 @@ int main (int argc, char** argv) {
       // Randomly map, with replacement, in_geno_lkl to geno_lkl
       for(uint64_t i = 0; i < pars->n_ind; i++)
         for(uint64_t s = 1; s <= pars->n_sites; s++)
-          pars->geno_lkl[i][s] = pars->in_geno_lkl[i][(int) ceil(rnd(0,pars->n_sites,pars->seed))];
+          pars->geno_lkl[i][s] = pars->in_geno_lkl[i][(int) ceil(rnd(rnd_gen, 0, pars->n_sites))];
     }
+
     if(pars->verbose >= 2)
       printf("> Calculating pairwise genetic distances\n");
 
@@ -269,6 +276,8 @@ int main (int argc, char** argv) {
   if(pars->verbose >= 1)
     printf("Done!\n");
   delete pars;
+
+  gsl_rng_free(rnd_gen);
 
   return 0;
 }

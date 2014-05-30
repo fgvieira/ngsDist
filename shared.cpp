@@ -1,4 +1,3 @@
-#include <gsl/gsl_rng.h>
 #include "shared.hpp"
 
 
@@ -69,10 +68,7 @@ int array_max_pos(double *array, int size) {
 
 
 
-double rnd(double min, double max, uint64_t seed) {
-  gsl_rng* r = gsl_rng_alloc(gsl_rng_taus);
-  gsl_rng_set(r, seed);
-
+double rnd(gsl_rng *r, uint64_t min, uint64_t max) {
   double rnd = min + gsl_rng_uniform(r) * (max - min);
   gsl_rng_free(r);
   return(rnd);
