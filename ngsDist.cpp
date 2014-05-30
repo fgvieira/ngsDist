@@ -202,9 +202,12 @@ int main (int argc, char** argv) {
 	printf("==> Analyzing bootstrap replicate %lu ...\n", rep);
 
       // Randomly map, with replacement, in_geno_lkl to geno_lkl
-      for(uint64_t i = 0; i < pars->n_ind; i++)
-        for(uint64_t s = 1; s <= pars->n_sites; s++)
-          pars->geno_lkl[i][s] = pars->in_geno_lkl[i][(int) ceil(rnd(rnd_gen, 0, pars->n_sites))];
+      for(uint64_t s = 1; s <= pars->n_sites; s++){
+	int rnd = (int) ceil( draw_rnd(rnd_gen, 0, pars->n_sites) );
+
+	for(uint64_t i = 0; i < pars->n_ind; i++)
+          pars->geno_lkl[i][s] = pars->in_geno_lkl[i][rnd];
+      }
     }
 
     if(pars->verbose >= 2)
@@ -248,10 +251,10 @@ int main (int argc, char** argv) {
     if(pars->verbose >= 2)
       printf("> Printing distance matrix\n");
 
-    fprintf(out_fh, "\n%lu\n", pars->n_ind);
+    fprintf(out_fh, "\n  %lu\n", pars->n_ind);
     for(uint64_t i = 0; i < pars->n_ind; i++){
       char* buf = join(dist_matrix[i], pars->n_ind, "\t");
-      fprintf(out_fh, "%s\n%s\n", pars->ind_labels[i], buf);
+      fprintf(out_fh, "%s\t%s\n", pars->ind_labels[i], buf);
       delete [] buf;
     }
 

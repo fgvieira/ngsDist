@@ -68,10 +68,8 @@ int array_max_pos(double *array, int size) {
 
 
 
-double rnd(gsl_rng *r, uint64_t min, uint64_t max) {
-  double rnd = min + gsl_rng_uniform(r) * (max - min);
-  gsl_rng_free(r);
-  return(rnd);
+double draw_rnd(gsl_rng *r, uint64_t min, uint64_t max) {
+  return( min + gsl_rng_uniform(r) * (max - min) );
 }
 
 
