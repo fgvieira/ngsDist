@@ -16,17 +16,17 @@ const uint64_t BUFF_LEN = 100000;
 typedef struct {
   char* in_geno;
   bool in_bin;
-  bool in_lkl;
-  bool in_log;
   double*** in_geno_lkl;
   double*** geno_lkl;
-  char* in_labels;
-  char** ind_labels;
   uint64_t n_ind;
   uint64_t n_sites;
-  uint64_t n_boot_rep;
+  char* in_labels;
+  char** ind_labels;
+  bool in_probs;
+  bool in_logscale;
   bool call_geno;
   double score[N_GENO][N_GENO];
+  uint64_t n_boot_rep;
   char* out_prefix;
   uint n_threads;
   bool version;
@@ -53,7 +53,3 @@ void* gen_dist_slave(void*);
 // parse_args.cpp
 void init_pars(params* );
 int parse_cmd_args(int, char**, params*);
-
-// read_data.cpp
-int read_geno(params*);
-int read_labels(params*);

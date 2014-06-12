@@ -41,8 +41,21 @@ int main (int argc, char** argv) {
 
   if(pars->verbose >= 1) {
     printf("==> Input Arguments:\n");
-    printf("\tgeno file: %s\n\tlog-scale: %s\n\tlabels file: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tn_boot_rep: %lu\n\tcall_geno: %s\n\tout prefix: %s\n\tthreads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
-	   pars->in_geno, pars->in_log ? "true":"false", pars->in_labels, pars->n_ind, pars->n_sites, pars->n_boot_rep, pars->call_geno ? "true":"false", pars->out_prefix, pars->n_threads, pars->version ? "true":"false", pars->verbose, pars->seed);
+    printf("\tgeno file: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tlabels file: %s\n\tprobs: %s\n\tlog_scale: %s\n\tcall_geno: %s\n\thet_dist: %f\n\tn_boot_rep: %lu\n\tout prefix: %s\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
+	   pars->in_geno,
+	   pars->n_ind,
+           pars->n_sites,
+	   pars->in_labels,
+	   pars->in_probs ? "true":"false",
+	   pars->in_logscale ? "true":"false",
+	   pars->call_geno ? "true":"false",
+	   pars->score[1][1],
+	   pars->n_boot_rep,
+	   pars->out_prefix,
+	   pars->n_threads,
+	   pars->version ? "true":"false",
+	   pars->verbose,
+	   pars->seed);
   }
   if(pars->verbose > 4)
     printf("==> Verbose values greater than 4 for debugging purpose only. Expect large amounts of info on screen\n");
@@ -130,7 +143,7 @@ int main (int argc, char** argv) {
   // Read from GENO file
   if(pars->verbose >= 1)
     printf("==> Reading genotype posterior probabilities\n");
-  pars->in_geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_lkl, pars->n_ind, pars->n_sites);
+  pars->in_geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_probs, pars->n_ind, pars->n_sites);
   
   // Initialize geno_lkl pointers
   pars->geno_lkl = new double**[pars->n_ind];
@@ -141,9 +154,9 @@ int main (int argc, char** argv) {
     for(uint64_t s = 1; s <= pars->n_sites; s++){
       // Call genotypes
       if(pars->call_geno)
-	call_geno(pars->in_geno_lkl[i][s], N_GENO, pars->in_log);
+	call_geno(pars->in_geno_lkl[i][s], N_GENO, pars->in_logscale);
       // Convert space
-      if(pars->in_log)
+      if(pars->in_logscale)
 	conv_space(pars->in_geno_lkl[i][s], N_GENO, exp);
     }
 
@@ -308,7 +321,6 @@ double gen_dist(params* p, uint64_t i1, uint64_t i2){
     for(uint64_t g1 = 0; g1 < N_GENO; g1++)
       for(uint64_t g2 = 0; g2 < N_GENO; g2++)
 	dist += p->score[g1][g2] * sfs[3*g1+g2];
-        //dist += p->geno_lkl[i1][s][g1] * p->geno_lkl[i2][s][g2] * p->score[g1][g2] * sfs[3*g1+g2];
 
     free_ptr(sfs);
   }

@@ -5,19 +5,17 @@
 void init_pars(params *pars) {
   pars->in_geno = NULL;
   pars->in_bin = false;
-  pars->in_lkl = false;
-  pars->in_log = false;
-  pars->in_geno_lkl = NULL;
-  pars->in_labels = NULL;
-  pars->ind_labels = NULL;
   pars->n_ind = 0;
   pars->n_sites = 0;
-  pars->n_boot_rep = 0;
+  pars->in_labels = NULL;
+  pars->in_probs = false;
+  pars->in_logscale = false;
   pars->call_geno = false;
   // Distance score matrix based on Eq 8.1 from Gronau et al 2011 and Del Vecchyo et al. 2014
   pars->score[0][0] = pars->score[1][1] = pars->score[2][2] = 0; 
   pars->score[0][1] = pars->score[1][0] = pars->score[1][2] = pars->score[2][1] = 0.5; 
   pars->score[0][2] = pars->score[2][0] = 1; 
+  pars->n_boot_rep = 0;
   pars->out_prefix = NULL;
   pars->n_threads = 1;
   pars->version = false;
@@ -32,14 +30,14 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
   static struct option long_options[] =
     {
       {"geno", required_argument, NULL, 'g'},
-      {"lkl", no_argument, NULL, 'l'},
-      {"log", no_argument, NULL, 'L'},
-      {"labels", required_argument, NULL, 'y'},
       {"n_ind", required_argument, NULL, 'n'},
       {"n_sites", required_argument, NULL, 's'},
-      {"n_boot_rep", required_argument, NULL, 'b'},
+      {"labels", required_argument, NULL, 'L'},
+      {"probs", no_argument, NULL, 'p'},
+      {"log_scale", no_argument, NULL, 'l'},
       {"call_geno", no_argument, NULL, 'G'},
-      {"nuc_diff", no_argument, NULL, 'd'},
+      {"alt_het_diff", no_argument, NULL, 'd'},
+      {"n_boot_rep", required_argument, NULL, 'b'},
       {"out", required_argument, NULL, 'o'},
       {"n_threads", required_argument, NULL, 'x'},
       {"version", no_argument, NULL, 'v'},
@@ -49,19 +47,10 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
     };
   
   int c = 0;
-  while ( (c = getopt_long_only(argc, argv, "g:lLy:n:s:b:Gdo:x:vV:S:", long_options, NULL)) != -1 )
+  while ( (c = getopt_long_only(argc, argv, "g:n:s:L:plGdb:o:x:vV:S:", long_options, NULL)) != -1 )
     switch (c) {
     case 'g':
       pars->in_geno = optarg;
-      break;
-    case 'l':
-      pars->in_lkl = true;
-      break;
-    case 'L':
-      pars->in_log = true;
-      break;
-    case 'y':
-      pars->in_labels = optarg;
       break;
     case 'n':
       pars->n_ind = atoi(optarg);
@@ -69,14 +58,23 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
     case 's':
       pars->n_sites = atoi(optarg);
       break;
-    case 'b':
-      pars->n_boot_rep = atoi(optarg);
+    case 'L':
+      pars->in_labels = optarg;
+      break;
+    case 'p':
+      pars->in_probs = true;
+      break;
+    case 'l':
+      pars->in_logscale = true;
       break;
     case 'G':
       pars->call_geno = true;
       break;
     case 'd':
       pars->score[1][1] = 0.5;
+      break;
+    case 'b':
+      pars->n_boot_rep = atoi(optarg);
       break;
     case 'o':
       pars->out_prefix = optarg;
