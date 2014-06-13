@@ -26,12 +26,15 @@ Executables are built into the main directory. If you wish to clean all binaries
 
 #### Parameters
 * `-geno FILE`: Input GL file.
-* `-log_scale`: Is the input in log-scale?.
-* `-labels FILE`: Labels, one per line, of the input sequences.
 * `-n_ind INT`: Sample size (number of individuals).
 * `-n_sites INT`: Total number of sites.
-* `-n_boot_rep INT`: Number of bootstrap replicates [0].
+* `-labels FILE`: Labels, one per line, of the input sequences.
+* `-probs`: is the input genotype probabilities (likelihoods or posteriors)?
+* `-log_scale`: Is the input in log-scale?.
 * `-call_geno`: Call genotypes before running analyses.
+* `-het_dist`: Use alternative heterozygote distance [0].
+* `-n_boot_rep INT`: Number of bootstrap replicates [0].
+* `-boot_block_size INT`: Block size for bootstrapping [1].
 * `-out_prefix FILE`: Output file name.
 * `-n_threads INT`: Number of threads to use. [1]
 * `-version`: Prints program version and exits.

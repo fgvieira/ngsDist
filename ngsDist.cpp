@@ -41,7 +41,7 @@ int main (int argc, char** argv) {
 
   if(pars->verbose >= 1) {
     printf("==> Input Arguments:\n");
-    printf("\tgeno file: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tlabels file: %s\n\tprobs: %s\n\tlog_scale: %s\n\tcall_geno: %s\n\thet_dist: %f\n\tn_boot_rep: %lu\n\tout prefix: %s\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
+    printf("\tgeno: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tlabels: %s\n\tprobs: %s\n\tlog_scale: %s\n\tcall_geno: %s\n\thet_dist: %f\n\tn_boot_rep: %lu\n\tboot_block_size: %lu\n\tout_prefix: %s\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
 	   pars->in_geno,
 	   pars->n_ind,
            pars->n_sites,
@@ -51,6 +51,7 @@ int main (int argc, char** argv) {
 	   pars->call_geno ? "true":"false",
 	   pars->score[1][1],
 	   pars->n_boot_rep,
+	   pars->boot_block_size,
 	   pars->out_prefix,
 	   pars->n_threads,
 	   pars->version ? "true":"false",
@@ -161,6 +162,8 @@ int main (int argc, char** argv) {
     }
 
   // Initialize random number generator
+  if(pars->verbose >= 2)
+    printf("==> Setting seed for random number generator\n");
   gsl_rng* rnd_gen = gsl_rng_alloc(gsl_rng_taus);
   gsl_rng_set(rnd_gen, pars->seed);
 
@@ -178,6 +181,7 @@ int main (int argc, char** argv) {
   //////////////////
   // Analyze Data //
   //////////////////
+  fflush(stdout);
   uint64_t comb_id = 0;
   double** dist_matrix = init_double(pars->n_ind, pars->n_ind, 0);
   // Create pthread structure array
@@ -200,28 +204,37 @@ int main (int argc, char** argv) {
   for(uint64_t rep = 0; rep <= pars->n_boot_rep; rep++){
     comb_id = 0;
 
-    if(rep == 0){
-      // Full dataset analyses
-      if(pars->verbose >= 1)
+    if(pars->verbose >= 1){
+      if(rep == 0)
+	// Full dataset analyses
 	printf("==> Analyzing full dataset...\n");
+      else
+	// Bootstrap analyses
+	printf("==> Bootstrap replicate # %lu ...\n", rep);
+    }
 
-      // Map in_geno_lkl data to geno_lkl
-      for(uint64_t i = 0; i < pars->n_ind; i++)
-	for(uint64_t s = 1; s <= pars->n_sites; s++)
-	  pars->geno_lkl[i][s] = pars->in_geno_lkl[i][s];
-    }else{
-      // Bootstrap analyses
-      if(pars->verbose >= 1)
-	printf("==> Analyzing bootstrap replicate %lu ...\n", rep);
+    // Map from in_geno_lkl data to geno_lkl
+    if(pars->n_sites % pars->boot_block_size != 0)
+      error(__FUNCTION__, "bootstrap block size must be a multiple of the total length!");
+    uint64_t n_blocks = (uint64_t) ceil(pars->n_sites/pars->boot_block_size);
+    
+    for(uint64_t b = 0; b < n_blocks; b++){
+      uint64_t rnd_b = b;
+      if( rep > 0)
+        rnd_b = (uint64_t) floor( draw_rnd(rnd_gen, 0, n_blocks) );
 
-      // Randomly map, with replacement, in_geno_lkl to geno_lkl
-      for(uint64_t s = 1; s <= pars->n_sites; s++){
-	int rnd = (int) ceil( draw_rnd(rnd_gen, 0, pars->n_sites) );
+      for(uint64_t s = 1; s <= pars->boot_block_size; s++){
+	uint64_t orig =     b * pars->boot_block_size + s;
+	uint64_t rnd  = rnd_b * pars->boot_block_size + s;
+
+	if(pars->verbose > 5)
+	  printf("block: %lu\torig_site: %lu\trand_block:%lu\trand_site: %lu\n", b, orig, rnd_b, rnd);
 
 	for(uint64_t i = 0; i < pars->n_ind; i++)
-          pars->geno_lkl[i][s] = pars->in_geno_lkl[i][rnd];
+	  pars->geno_lkl[i][orig] = pars->in_geno_lkl[i][rnd];
       }
     }
+
 
     if(pars->verbose >= 2)
       printf("> Calculating pairwise genetic distances\n");

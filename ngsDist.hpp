@@ -27,6 +27,7 @@ typedef struct {
   bool call_geno;
   double score[N_GENO][N_GENO];
   uint64_t n_boot_rep;
+  uint64_t boot_block_size;
   char* out_prefix;
   uint n_threads;
   bool version;
