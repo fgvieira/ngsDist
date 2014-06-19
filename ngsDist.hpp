@@ -33,14 +33,11 @@ typedef struct {
   bool version;
   uint verbose;
   uint seed;
-  sem_t pth_sem;
 } params;
 
 
 // Pthread structure
 typedef struct {
-  pthread_t id;
-  pthread_attr_t attr;
   params* pars;
   double** dist_matrix;
   uint64_t i1;

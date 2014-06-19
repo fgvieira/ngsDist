@@ -178,13 +178,6 @@ int main (int argc, char** argv) {
     error(__FUNCTION__, "cannot open output file!");
  
 
-  /* Create a threadpool of 10 thread workers. */
-  struct threadpool *thread_pool;
-  if ((thread_pool = threadpool_init(10)) == NULL)
-    error(__FUNCTION__, "failed to create thread pool!");
-
-
-
   //////////////////
   // Analyze Data //
   //////////////////
@@ -212,6 +205,13 @@ int main (int argc, char** argv) {
 	// Bootstrap analyses
 	printf("==> Bootstrap replicate # %lu ...\n", rep);
     }
+
+
+    /* Create a threadpool of 10 thread workers. */
+    struct threadpool *thread_pool;
+    if ((thread_pool = threadpool_init(10)) == NULL)
+      error(__FUNCTION__, "failed to create thread pool!");
+
 
     // Map from in_geno_lkl data to geno_lkl
     if(pars->n_sites % pars->boot_block_size != 0)
