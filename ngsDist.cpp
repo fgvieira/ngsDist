@@ -22,6 +22,7 @@
 #include "ngsDist.hpp"
 #include "read_data.cpp"
 #include "emOptim2.cpp"
+#include "threadpool.c"
 
 char const* version = "0.0.1b";
 
@@ -177,6 +178,12 @@ int main (int argc, char** argv) {
     error(__FUNCTION__, "cannot open output file!");
  
 
+  /* Create a threadpool of 10 thread workers. */
+  struct threadpool *thread_pool;
+  if ((thread_pool = threadpool_init(10)) == NULL)
+    error(__FUNCTION__, "failed to create thread pool!");
+
+
 
   //////////////////
   // Analyze Data //
@@ -184,21 +191,14 @@ int main (int argc, char** argv) {
   fflush(stdout);
   uint64_t comb_id = 0;
   double** dist_matrix = init_double(pars->n_ind, pars->n_ind, 0);
+
   // Create pthread structure array
   pth_struct* pth = new pth_struct[n_comb];
-  // Initialize common pthread elements
+  // Initialize pars and distance matrix pointers
   for(comb_id = 0; comb_id < n_comb; comb_id++){
-    // Initialize and set pthread detached attribute
-    pthread_attr_init(&pth[comb_id].attr);
-    pthread_attr_setdetachstate(&pth[comb_id].attr, PTHREAD_CREATE_DETACHED);
-    // Initialize pars and distance matrix pointers
     pth[comb_id].pars = pars;
     pth[comb_id].dist_matrix = dist_matrix;
   }
-
-  // Initialize semaphore
-  if( sem_init(&pars->pth_sem, 0, pars->n_threads) )
-    error(__FUNCTION__, "cannot initialise pthread sempahore!");
 
   // Loop for bootstrap analyses
   for(uint64_t rep = 0; rep <= pars->n_boot_rep; rep++){
@@ -220,7 +220,7 @@ int main (int argc, char** argv) {
     
     for(uint64_t b = 0; b < n_blocks; b++){
       uint64_t rnd_b = b;
-      if( rep > 0)
+      if(rep > 0)
         rnd_b = (uint64_t) floor( draw_rnd(rnd_gen, 0, n_blocks) );
 
       for(uint64_t s = 1; s <= pars->boot_block_size; s++){
@@ -241,13 +241,16 @@ int main (int argc, char** argv) {
 
     for(uint64_t i1 = 0; i1 < pars->n_ind; i1++)
       for(uint64_t i2 = i1+1; i2 < pars->n_ind; i2++){
-	sem_wait(&pars->pth_sem);
 	// Set which individuals to analyze
 	pth[comb_id].i1 = i1;
 	pth[comb_id].i2 = i2;
-	// Launch pthread
-	if( pthread_create(&pth[comb_id].id, &pth[comb_id].attr, gen_dist_slave, (void*) &pth[comb_id]) )
-	  error(__FUNCTION__, "cannot create thread!");
+
+	// Add task to thread pool
+	int ret = threadpool_add_task(thread_pool, gen_dist_slave, (void*) &pth[comb_id], 0);
+	if (ret == -1)
+	  error(__FUNCTION__, "error while adding task to thread pool!");
+	else if (ret == -2)
+	  error(__FUNCTION__, "task did not execute since the pool was overloaded!");
 
 	comb_id++;
 
@@ -255,20 +258,16 @@ int main (int argc, char** argv) {
 	  printf("> Launched thread for individuals %lu and %lu (comb# %lu).\n", i1, i2, comb_id);
       }
 
-    if(n_comb != comb_id)
-      error(__FUNCTION__, "some combinations are missing!");
-
 
   
     //////////////////////////
     // Wait for all threads //
     //////////////////////////
-    int n_running_pthreads = 0;
-    while(n_running_pthreads - pars->n_threads){
-      sem_getvalue(&pars->pth_sem, &n_running_pthreads);
-      sleep(1);
-    }
+    threadpool_free(thread_pool,1);
 
+
+    if(n_comb != comb_id)
+      error(__FUNCTION__, "some combinations are missing!");
 
 
     ///////////////////////////
@@ -345,21 +344,8 @@ double gen_dist(params* p, uint64_t i1, uint64_t i2){
 
 
 
-void* gen_dist_slave(void* pth){
+void gen_dist_slave(void* pth){
   pth_struct* p = (pth_struct*) pth;
 
   p->dist_matrix[p->i1][p->i2] = p->dist_matrix[p->i2][p->i1] = gen_dist(p->pars, p->i1, p->i2);
-
-  // Free one slot for another thread
-  if(sem_post(&p->pars->pth_sem))
-    error(__FUNCTION__, "semaphore post failed");
-
-  // Debug
-  if(p->pars->verbose >= 6){
-    int n_free_threads = 0;
-    sem_getvalue(&p->pars->pth_sem, &n_free_threads);
-    printf("Thread finished! Still running: %d\n", p->pars->n_threads - n_free_threads);
-  }
-
-  pthread_exit(NULL);
 }

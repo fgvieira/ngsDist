@@ -49,7 +49,7 @@ typedef struct {
 
 
 double gen_dist(params*, uint64_t, uint64_t);
-void* gen_dist_slave(void*);
+void gen_dist_slave(void*);
 
 // parse_args.cpp
 void init_pars(params* );
