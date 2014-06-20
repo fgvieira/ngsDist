@@ -19,7 +19,7 @@
 #define REPORT_ERROR(...)
 #endif /* THREAD_POOL_DEBUG */
 
-#define THREAD_POOL_QUEUE_SIZE 10000
+#define THREAD_POOL_QUEUE_SIZE 100000
 
 struct threadpool_task
 {
@@ -34,6 +34,7 @@ struct threadpool_queue
 	unsigned int tail;
 
 	unsigned int num_of_cells;
+        unsigned int size;
 
 	void *cells[THREAD_POOL_QUEUE_SIZE];
 };
@@ -61,18 +62,19 @@ struct threadpool
  *
  * @param queue The queue structure.
  */
-static void threadpool_queue_init(struct threadpool_queue *queue)
+static void threadpool_queue_init(struct threadpool_queue *queue, unsigned int queue_size)
 {
-	int i;
+        unsigned int i;
 
-	for (i = 0; i < THREAD_POOL_QUEUE_SIZE; i++)
+	for (i = 0; i < queue_size; i++)
 	{
-		queue->cells[i] = NULL;
+	    queue->cells[i] = NULL;
 	}
 
 	queue->head = 0;
 	queue->tail = 0;
 	queue->num_of_cells = 0;
+	queue->size = queue_size;
 }
 
 /**
@@ -84,7 +86,7 @@ static void threadpool_queue_init(struct threadpool_queue *queue)
  */
 static int threadpool_queue_enqueue(struct threadpool_queue *queue, void *data)
 {
-	if (queue->num_of_cells == THREAD_POOL_QUEUE_SIZE) {
+	if (queue->num_of_cells == queue->size) {
 		REPORT_ERROR("The queue is full, unable to add data to it.");
 		return -1;
 	}
@@ -99,7 +101,7 @@ static int threadpool_queue_enqueue(struct threadpool_queue *queue, void *data)
 	queue->num_of_cells++;
 	queue->tail++;
 
-	if (queue->tail == THREAD_POOL_QUEUE_SIZE) {
+	if (queue->tail == queue->size) {
 		queue->tail = 0;
 	}
 
@@ -132,7 +134,7 @@ static void *threadpool_queue_dequeue(struct threadpool_queue *queue)
 	}
 	else {
 		queue->head++;
-		if (queue->head == THREAD_POOL_QUEUE_SIZE) {
+		if (queue->head == queue->size) {
 			queue->head = 0;
 		}
 	}
@@ -369,10 +371,10 @@ static void *stop_worker_thr_routines_cb(void *ptr)
 	return NULL;
 }
 
-struct threadpool* threadpool_init(int num_of_threads)
+struct threadpool* threadpool_init(int num_of_threads, unsigned int queue_size)
 {
 	struct threadpool *pool;
-	int i;
+	unsigned int i;
 
 	/* Create the thread pool struct. */
 	if ((pool = (struct threadpool*) malloc(sizeof(struct threadpool))) == NULL) {
@@ -405,12 +407,12 @@ struct threadpool* threadpool_init(int num_of_threads)
 	}
 
 	/* Init the jobs queue. */
-	threadpool_queue_init(&(pool->tasks_queue));
+	threadpool_queue_init(&(pool->tasks_queue), queue_size);
 
 	/* Init the free tasks queue. */
-	threadpool_queue_init(&(pool->free_tasks_queue));
+	threadpool_queue_init(&(pool->free_tasks_queue), queue_size);
 	/* Add all the free tasks to the free tasks queue. */
-	for (i = 0; i < THREAD_POOL_QUEUE_SIZE; i++) {
+	for (i = 0; i < queue_size; i++) {
 		threadpool_task_init((pool->tasks) + i);
 		if (threadpool_queue_enqueue(&(pool->free_tasks_queue),(pool->tasks) + i)) {
 			REPORT_ERROR("Failed to a task to the free tasks queue during initialization.");

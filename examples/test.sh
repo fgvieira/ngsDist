@@ -3,7 +3,7 @@ ANGSD=../../ngsTools/angsd
 
 
 ##### Clean up
-rm testA_*
+rm -f testA_*
 
 
 ##### Genotypes' likelihood and posterior probabilities

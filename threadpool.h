@@ -17,7 +17,7 @@ struct threadpool;
  * @param num_of_threads The number of worker thread used in this pool.
  * @return On success returns a newly allocated thread pool, on failure NULL is returned.
  */
-struct threadpool* threadpool_init(int num_of_threads);
+struct threadpool* threadpool_init(int num_of_threads, unsigned int queue_size);
 
 /**
  * This function adds a routine to be exexuted by the threadpool at some future time.

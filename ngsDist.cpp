@@ -207,9 +207,9 @@ int main (int argc, char** argv) {
     }
 
 
-    /* Create a threadpool of 10 thread workers. */
+    /* Create a threadpool of thread workers. */
     struct threadpool *thread_pool;
-    if ((thread_pool = threadpool_init(10)) == NULL)
+    if ((thread_pool = threadpool_init(pars->n_threads, n_comb)) == NULL)
       error(__FUNCTION__, "failed to create thread pool!");
 
 

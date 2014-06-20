@@ -3,7 +3,6 @@
 `ngsDist` is a program to estimate pairwise genetic distances directly from low genotype likelihoods, taking the uncertainty of genotype's assignation into account.
 
 
-
 ### Installation
 
 To install the entire package just download the source code:
@@ -43,3 +42,7 @@ Executables are built into the main directory. If you wish to clean all binaries
 
 ### Input data
 As input `ngsDist` needs a Genotype Likelihood (GL) file, formatted as 3*n_ind*n_sites, either in text (gziped) of binary doubles.
+
+### Thread pool
+The thread pool	implementation was made	by Tomer Heber and is freely available from:
+http://sourceforge.net/projects/cthreadpool/
