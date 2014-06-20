@@ -1,45 +1,86 @@
-/**
- * threadpool.h
- *
- *  Created on: Dec 11, 2010
- *      Author: Tomer Heber (heber.tomer@gmail.com).
+/*
+ * Copyright (c) 2013, Mathias Brossard <mathias@brossard.org>.
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ * 
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ * 
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef THREADPOOL_H_
-#define THREADPOOL_H_
-
-struct threadpool;
-
+#ifndef _THREADPOOL_H_
+#define _THREADPOOL_H_
 
 /**
- * This function creates a newly allocated thread pool.
- *
- * @param num_of_threads The number of worker thread used in this pool.
- * @return On success returns a newly allocated thread pool, on failure NULL is returned.
+ * @file threadpool.h
+ * @brief Threadpool Header File
  */
-struct threadpool* threadpool_init(int num_of_threads, unsigned int queue_size);
+
+typedef struct threadpool_t threadpool_t;
+
+typedef enum {
+    threadpool_invalid        = -1,
+    threadpool_lock_failure   = -2,
+    threadpool_queue_full     = -3,
+    threadpool_shutdown       = -4,
+    threadpool_thread_failure = -5
+} threadpool_error_t;
+
+typedef enum {
+    threadpool_graceful       = 1
+} threadpool_destroy_flags_t;
 
 /**
- * This function adds a routine to be exexuted by the threadpool at some future time.
- *
- * @param pool The thread pool structure.
- * @param routine The routine to be executed.
- * @param data The data to be passed to the routine.
- * @param blocking The threadpool might be overloaded if blocking != 0 the operation will block until it is possible to add the routine to the thread pool. If blocking is 0 and the thread pool is overloaded, the call to this function will return immediately.
- *
- * @return 0 on success.
- * @return -1 on failure.
- * @return -2 when the threadpool is overloaded and blocking is set to 0 (non-blocking).
+ * @function threadpool_create
+ * @brief Creates a threadpool_t object.
+ * @param thread_count Number of worker threads.
+ * @param queue_size   Size of the queue.
+ * @param flags        Unused parameter.
+ * @return a newly created thread pool or NULL
  */
-int threadpool_add_task(struct threadpool *pool, void (*routine)(void*), void *data, int blocking);
+threadpool_t *threadpool_create(int thread_count, int queue_size, int flags);
 
 /**
- * This function stops all the worker threads (stop & exit). And frees all the allocated memory.
- * In case blocking != 0 the call to this function will block until all worker threads have exited.
- *
- * @param pool The thread pool structure.
- * @param blocking If blocking != 0, the call to this function will block until all worker threads are done.
+ * @function threadpool_add
+ * @brief add a new task in the queue of a thread pool
+ * @param pool     Thread pool to which add the task.
+ * @param function Pointer to the function that will perform the task.
+ * @param argument Argument to be passed to the function.
+ * @param flags    Unused parameter.
+ * @return 0 if all goes well, negative values in case of error (@see
+ * threadpool_error_t for codes).
  */
-void threadpool_free(struct threadpool *pool, int blocking);
+int threadpool_add(threadpool_t *pool, void (*routine)(void *),
+                   void *arg, int flags);
 
-#endif /* THREADPOOL_H_ */
+/**
+ * @function threadpool_destroy
+ * @brief Stops and destroys a thread pool.
+ * @param pool  Thread pool to destroy.
+ * @param flags Flags for shutdown
+ *
+ * Known values for flags are 0 (default) and threadpool_graceful in
+ * which case the thread pool doesn't accept any new tasks but
+ * processes all pending tasks before shutdown.
+ */
+int threadpool_destroy(threadpool_t *pool, int flags);
+
+#endif /* _THREADPOOL_H_ */

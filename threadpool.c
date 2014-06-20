@@ -1,548 +1,301 @@
-/**
- * threadpool.c
- *
- *  Created on: Dec 11, 2010
- *      Author: Tomer Heber (heber.tomer@gmail.com).
+/*
+ * Copyright (c) 2013, Mathias Brossard <mathias@brossard.org>.
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ * 
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ * 
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "threadpool.h"
+/**
+ * @file threadpool.c
+ * @brief Threadpool implementation file
+ */
 
 #include <stdlib.h>
 #include <pthread.h>
-#include <stdio.h>
+#include <unistd.h>
 
-#define THREAD_POOL_DEBUG
+#include "threadpool.h"
 
-#ifdef THREAD_POOL_DEBUG
-#define REPORT_ERROR(...) fprintf (stderr,"line %d - ",__LINE__); fprintf (stderr, __VA_ARGS__); fprintf (stderr,"\n")
-#else
-#define REPORT_ERROR(...)
-#endif /* THREAD_POOL_DEBUG */
+typedef enum {
+    immediate_shutdown = 1,
+    graceful_shutdown  = 2
+} threadpool_shutdown_t;
 
-#define THREAD_POOL_QUEUE_SIZE 100000
+/**
+ *  @struct threadpool_task
+ *  @brief the work struct
+ *
+ *  @var function Pointer to the function that will perform the task.
+ *  @var argument Argument to be passed to the function.
+ */
 
-struct threadpool_task
-{
-	void (*routine_cb)(void*);
+typedef struct {
+    void (*function)(void *);
+    void *argument;
+} threadpool_task_t;
 
-	void *data;
+/**
+ *  @struct threadpool
+ *  @brief The threadpool struct
+ *
+ *  @var notify       Condition variable to notify worker threads.
+ *  @var threads      Array containing worker threads ID.
+ *  @var thread_count Number of threads
+ *  @var queue        Array containing the task queue.
+ *  @var queue_size   Size of the task queue.
+ *  @var head         Index of the first element.
+ *  @var tail         Index of the next element.
+ *  @var count        Number of pending tasks
+ *  @var shutdown     Flag indicating if the pool is shutting down
+ *  @var started      Number of started threads
+ */
+struct threadpool_t {
+  pthread_mutex_t lock;
+  pthread_cond_t notify;
+  pthread_t *threads;
+  threadpool_task_t *queue;
+  int thread_count;
+  int queue_size;
+  int head;
+  int tail;
+  int count;
+  int shutdown;
+  int started;
 };
 
-struct threadpool_queue
-{
-	unsigned int head;
-	unsigned int tail;
-
-	unsigned int num_of_cells;
-        unsigned int size;
-
-	void *cells[THREAD_POOL_QUEUE_SIZE];
-};
-
-struct threadpool
-{
-	struct threadpool_queue tasks_queue;
-	struct threadpool_queue free_tasks_queue;
-
-	struct threadpool_task tasks[THREAD_POOL_QUEUE_SIZE];
-
-	pthread_t *thr_arr;
-
-	unsigned short num_of_threads;
-	volatile unsigned short stop_flag;
-
-	pthread_mutex_t free_tasks_mutex;
-	pthread_mutex_t mutex;
-	pthread_cond_t free_tasks_cond;
-	pthread_cond_t cond;
-};
-
 /**
- * This function inits a threadpool queue.
- *
- * @param queue The queue structure.
+ * @function void *threadpool_thread(void *threadpool)
+ * @brief the worker thread
+ * @param threadpool the pool which own the thread
  */
-static void threadpool_queue_init(struct threadpool_queue *queue, unsigned int queue_size)
+static void *threadpool_thread(void *threadpool);
+
+int threadpool_free(threadpool_t *pool);
+
+threadpool_t *threadpool_create(int thread_count, int queue_size, int flags)
 {
-        unsigned int i;
+    threadpool_t *pool;
+    int i;
 
-	for (i = 0; i < queue_size; i++)
-	{
-	    queue->cells[i] = NULL;
-	}
+    /* TODO: Check for negative or otherwise very big input parameters */
 
-	queue->head = 0;
-	queue->tail = 0;
-	queue->num_of_cells = 0;
-	queue->size = queue_size;
+    if((pool = (threadpool_t *)malloc(sizeof(threadpool_t))) == NULL) {
+        goto err;
+    }
+
+    /* Initialize */
+    pool->thread_count = 0;
+    pool->queue_size = queue_size;
+    pool->head = pool->tail = pool->count = 0;
+    pool->shutdown = pool->started = 0;
+
+    /* Allocate thread and task queue */
+    pool->threads = (pthread_t *)malloc(sizeof(pthread_t) * thread_count);
+    pool->queue = (threadpool_task_t *)malloc
+        (sizeof(threadpool_task_t) * queue_size);
+
+    /* Initialize mutex and conditional variable first */
+    if((pthread_mutex_init(&(pool->lock), NULL) != 0) ||
+       (pthread_cond_init(&(pool->notify), NULL) != 0) ||
+       (pool->threads == NULL) ||
+       (pool->queue == NULL)) {
+        goto err;
+    }
+
+    /* Start worker threads */
+    for(i = 0; i < thread_count; i++) {
+        if(pthread_create(&(pool->threads[i]), NULL,
+                          threadpool_thread, (void*)pool) != 0) {
+            threadpool_destroy(pool, 0);
+            return NULL;
+        }
+        pool->thread_count++;
+        pool->started++;
+    }
+
+    return pool;
+
+ err:
+    if(pool) {
+        threadpool_free(pool);
+    }
+    return NULL;
 }
 
-/**
- * This function adds data to the tail of the queue.
- *
- * @param queue The queue structure.
- * @param data The data to be added to the queue.
- * @return 0 on success (the data was added to the queue) else -1 is returned.
- */
-static int threadpool_queue_enqueue(struct threadpool_queue *queue, void *data)
+int threadpool_add(threadpool_t *pool, void (*function)(void *),
+                   void *argument, int flags)
 {
-	if (queue->num_of_cells == queue->size) {
-		REPORT_ERROR("The queue is full, unable to add data to it.");
-		return -1;
-	}
+    int err = 0;
+    int next;
 
-	if (queue->cells[queue->tail] != NULL) {
-		REPORT_ERROR("A problem was detected in the queue (expected NULL, but found a different value).");
-		return -1;
-	}
+    if(pool == NULL || function == NULL) {
+        return threadpool_invalid;
+    }
 
-	queue->cells[queue->tail] = data;
+    if(pthread_mutex_lock(&(pool->lock)) != 0) {
+        return threadpool_lock_failure;
+    }
 
-	queue->num_of_cells++;
-	queue->tail++;
+    next = (pool->tail + 1) % pool->queue_size;
 
-	if (queue->tail == queue->size) {
-		queue->tail = 0;
-	}
+    do {
+        /* Are we full ? */
+        if(pool->count == pool->queue_size) {
+            err = threadpool_queue_full;
+            break;
+        }
 
-	return 0;
+        /* Are we shutting down ? */
+        if(pool->shutdown) {
+            err = threadpool_shutdown;
+            break;
+        }
+
+        /* Add task to queue */
+        pool->queue[pool->tail].function = function;
+        pool->queue[pool->tail].argument = argument;
+        pool->tail = next;
+        pool->count += 1;
+
+        /* pthread_cond_broadcast */
+        if(pthread_cond_signal(&(pool->notify)) != 0) {
+            err = threadpool_lock_failure;
+            break;
+        }
+    } while(0);
+
+    if(pthread_mutex_unlock(&pool->lock) != 0) {
+        err = threadpool_lock_failure;
+    }
+
+    return err;
 }
 
-/**
- * This function removes and returns the head data element in the queue.
- *
- * @param queue The queue structure.
- * @return On success a data element is returned, on failure NULL is returned.
- */
-static void *threadpool_queue_dequeue(struct threadpool_queue *queue)
+int threadpool_destroy(threadpool_t *pool, int flags)
 {
-	void *data;
+    int i, err = 0;
 
-	if (queue->num_of_cells == 0) {
-			REPORT_ERROR("Tried to dequeue from an empty queue.");
-			return NULL;
-	}
+    if(pool == NULL) {
+        return threadpool_invalid;
+    }
 
-	data = queue->cells[queue->head];
+    if(pthread_mutex_lock(&(pool->lock)) != 0) {
+        return threadpool_lock_failure;
+    }
 
-	queue->cells[queue->head] = NULL;
-	queue->num_of_cells--;
+    do {
+        /* Already shutting down */
+        if(pool->shutdown) {
+            err = threadpool_shutdown;
+            break;
+        }
 
-	if (queue->num_of_cells == 0) {
-		queue->head = 0;
-		queue->tail = 0;
-	}
-	else {
-		queue->head++;
-		if (queue->head == queue->size) {
-			queue->head = 0;
-		}
-	}
+        pool->shutdown = (flags & threadpool_graceful) ?
+            graceful_shutdown : immediate_shutdown;
 
-	return data;
+        /* Wake up all worker threads */
+        if((pthread_cond_broadcast(&(pool->notify)) != 0) ||
+           (pthread_mutex_unlock(&(pool->lock)) != 0)) {
+            err = threadpool_lock_failure;
+            break;
+        }
+
+        /* Join all worker thread */
+        for(i = 0; i < pool->thread_count; i++) {
+            if(pthread_join(pool->threads[i], NULL) != 0) {
+                err = threadpool_thread_failure;
+            }
+        }
+    } while(0);
+
+    /* Only if everything went well do we deallocate the pool */
+    if(!err) {
+        threadpool_free(pool);
+    }
+    return err;
 }
 
-/**
- * This function checks if a given queue is empty.
- *
- * @param queue The queue structure.
- * @return 1 if the queue is empty, else 0.
- */
-static int threadpool_queue_is_empty(struct threadpool_queue *queue)
+int threadpool_free(threadpool_t *pool)
 {
-	if (queue->num_of_cells == 0) {
-		return 1;
-	}
+    if(pool == NULL || pool->started > 0) {
+        return -1;
+    }
 
-	return 0;
+    /* Did we manage to allocate ? */
+    if(pool->threads) {
+        free(pool->threads);
+        free(pool->queue);
+ 
+        /* Because we allocate pool->threads after initializing the
+           mutex and condition variable, we're sure they're
+           initialized. Let's lock the mutex just in case. */
+        pthread_mutex_lock(&(pool->lock));
+        pthread_mutex_destroy(&(pool->lock));
+        pthread_cond_destroy(&(pool->notify));
+    }
+    free(pool);    
+    return 0;
 }
 
-/**
- * This function queries for the size of the given queue argument.
- *
- * @param queue The queue structure.
- * @return The size of the queue.
- */
-static int threadpool_queue_getsize(struct threadpool_queue *queue)
+
+static void *threadpool_thread(void *threadpool)
 {
-	return queue->num_of_cells;
-}
+    threadpool_t *pool = (threadpool_t *)threadpool;
+    threadpool_task_t task;
 
-/**
- * This function initializes the a threadpool_task structure.
- *
- * @param task The threadpool_task to init.
- */
-static void threadpool_task_init(struct threadpool_task *task)
-{
-	task->data = NULL;
-	task->routine_cb = NULL;
-}
+    for(;;) {
+        /* Lock must be taken to wait on conditional variable */
+        pthread_mutex_lock(&(pool->lock));
 
-/**
- * This function obtains a queued task from the pool and returns it.
- * If no such task is available the operation blocks.
- *
- * @param pool The thread pool structure.
- * @return A task or NULL on error (or if thread pool should shut down).
- */
-static struct threadpool_task* threadpool_task_get_task(struct threadpool *pool)
-{
-	struct threadpool_task* task;
+        /* Wait on condition variable, check for spurious wakeups.
+           When returning from pthread_cond_wait(), we own the lock. */
+        while((pool->count == 0) && (!pool->shutdown)) {
+            pthread_cond_wait(&(pool->notify), &(pool->lock));
+        }
 
-	/* Obtain a task */
-	if (pthread_mutex_lock(&(pool->mutex))) {
-		perror("pthread_mutex_lock: ");
-		return NULL;
-	}
+        if((pool->shutdown == immediate_shutdown) ||
+           ((pool->shutdown == graceful_shutdown) &&
+            (pool->count == 0))) {
+            break;
+        }
 
-	while (threadpool_queue_is_empty(&(pool->tasks_queue))) {
-		if (pool->stop_flag)
-		{
-			if (pthread_cond_broadcast(&(pool->cond))) {
-				perror("pthread_cond_broadcast: ");
-			}
+        /* Grab our task */
+        task.function = pool->queue[pool->head].function;
+        task.argument = pool->queue[pool->head].argument;
+	pool->head = (pool->head + 1) % pool->queue_size;
+        pool->count -= 1;
 
-			if (pthread_mutex_unlock(&(pool->mutex))) {
-				perror("pthread_mutex_unlock: ");
-				return NULL;
-			}
+        /* Unlock */
+        pthread_mutex_unlock(&(pool->lock));
 
-			return NULL;
-		}
+        /* Get to work */
+        (*(task.function))(task.argument);
+    }
 
-		/* Block until a new task arrives. */
-		if (pthread_cond_wait(&(pool->cond),&(pool->mutex))) {
-			perror("pthread_cond_wait: ");
-			if (pthread_mutex_unlock(&(pool->mutex))) {
-				perror("pthread_mutex_unlock: ");
-			}
+    pool->started--;
 
-			return NULL;
-		}
-	}
-
-	if ((task = (struct threadpool_task*)threadpool_queue_dequeue(&(pool->tasks_queue))) == NULL) {
-		/* Since task is NULL returning task will return NULL as required. */
-		REPORT_ERROR("Failed to obtain a task from the jobs queue.");
-	}
-
-	if (pthread_mutex_unlock(&(pool->mutex))) {
-		perror("pthread_mutex_unlock: ");
-		return NULL;
-	}
-
-	return task;
-}
-
-/**
- * This is the routine the worker threads do during their life.
- *
- * @param data Contains a pointer to the threadpool structure.
- * @return NULL.
- */
-static void *worker_thr_routine(void *data)
-{
-	struct threadpool *pool = (struct threadpool*)data;
-	struct threadpool_task *task;
-
-	while (1) {
-		task = threadpool_task_get_task(pool);
-		if (task == NULL) {
-			if (pool->stop_flag) {
-				/* Worker thr needs to exit (thread pool was shutdown). */
-				break;
-			}
-			else {
-				/* An error has occurred. */
-				REPORT_ERROR("Warning an error has occurred when trying to obtain a worker task.");
-				REPORT_ERROR("The worker thread has exited.");
-				break;
-			}
-		}
-
-		/* Execute routine (if any). */
-		if (task->routine_cb) {
-			task->routine_cb(task->data);
-
-			/* Release the task by returning it to the free_task_queue. */
-			threadpool_task_init(task);
-			if (pthread_mutex_lock(&(pool->free_tasks_mutex))) {
-				perror("pthread_mutex_lock: ");
-				REPORT_ERROR("The worker thread has exited.");
-				break;
-			}
-
-			if (threadpool_queue_enqueue(&(pool->free_tasks_queue),task)) {
-				REPORT_ERROR("Failed to enqueue a task to free tasks queue.");
-				if (pthread_mutex_unlock(&(pool->free_tasks_mutex))) {
-					perror("pthread_mutex_unlock: ");
-				}
-
-				REPORT_ERROR("The worker thread has exited.");
-				break;
-			}
-
-			if (threadpool_queue_getsize(&(pool->free_tasks_queue)) == 1) {
-				/* Notify all waiting threads that new tasks can added. */
-				if (pthread_cond_broadcast(&(pool->free_tasks_cond))) {
-					perror("pthread_cond_broadcast: ");
-					if (pthread_mutex_unlock(&(pool->free_tasks_mutex))) {
-						perror("pthread_mutex_unlock: ");
-					}
-
-					break;
-				}
-			}
-
-			if (pthread_mutex_unlock(&(pool->free_tasks_mutex))) {
-				perror("pthread_mutex_unlock: ");
-				REPORT_ERROR("The worker thread has exited.");
-				break;
-			}
-		}
-	}
-
-	return NULL;
-}
-
-/**
- * This callback function does the following steps:
- * 1. It raises a flag that notifies the worker threads to stop working.
- * 2. It waits until all worker threads are done with their execution.
- * 3. It frees all the allocated memory of the threadpool struct.
- *
- * @param ptr The pool to stop its worker threads.
-
- * @return 0.
- */
-static void *stop_worker_thr_routines_cb(void *ptr)
-{
-	int i;
-	struct threadpool *pool = (struct threadpool*)ptr;
-
-	if (pthread_mutex_lock(&(pool->mutex))) {
-		perror("pthread_mutex_lock: ");
-		REPORT_ERROR("Warning: Memory was not released.");
-		REPORT_ERROR("Warning: Some of the worker threads may have failed to exit.");
-		return NULL;
-	}
-
-	pool->stop_flag = 1;
-
-	while (!threadpool_queue_is_empty(&(pool->tasks_queue))) {
-		/* Block until all tasks have been executed. */
-		if (pthread_cond_wait(&(pool->cond),&(pool->mutex))) {
-			perror("pthread_cond_wait: ");
-			if (pthread_mutex_unlock(&(pool->mutex))) {
-				perror("pthread_mutex_unlock: ");
-			}
-
-			return NULL;
-		}
-	}
-
-	/* Wakeup all worker threads (broadcast operation). */
-	if (pthread_cond_broadcast(&(pool->cond))) {
-		perror("pthread_cond_broadcast: ");
-		REPORT_ERROR("Warning: Memory was not released.");
-		REPORT_ERROR("Warning: Some of the worker threads may have failed to exit.");
-		return NULL;
-	}
-
-	if (pthread_mutex_unlock(&(pool->mutex))) {
-		perror("pthread_mutex_unlock: ");
-		REPORT_ERROR("Warning: Memory was not released.");
-		REPORT_ERROR("Warning: Some of the worker threads may have failed to exit.");
-		return NULL;
-	}
-
-	/* Wait until all worker threads are done. */
-	for (i = 0; i < pool->num_of_threads; i++) {
-		if (pthread_join(pool->thr_arr[i],NULL)) {
-			perror("pthread_join: ");
-		}
-	}
-
-	/* Free all allocated memory. */
-	free(pool->thr_arr);
-	free(pool);
-
-	return NULL;
-}
-
-struct threadpool* threadpool_init(int num_of_threads, unsigned int queue_size)
-{
-	struct threadpool *pool;
-	unsigned int i;
-
-	/* Create the thread pool struct. */
-	if ((pool = (struct threadpool*) malloc(sizeof(struct threadpool))) == NULL) {
-		perror("malloc: ");
-		return NULL;
-	}
-
-	pool->stop_flag = 0;
-
-	/* Init the mutex and cond vars. */
-	if (pthread_mutex_init(&(pool->free_tasks_mutex),NULL)) {
-		perror("pthread_mutex_init: ");
-		free(pool);
-		return NULL;
-	}
-	if (pthread_mutex_init(&(pool->mutex),NULL)) {
-		perror("pthread_mutex_init: ");
-		free(pool);
-		return NULL;
-	}
-	if (pthread_cond_init(&(pool->free_tasks_cond),NULL)) {
-		perror("pthread_mutex_init: ");
-		free(pool);
-		return NULL;
-	}
-	if (pthread_cond_init(&(pool->cond),NULL)) {
-		perror("pthread_mutex_init: ");
-		free(pool);
-		return NULL;
-	}
-
-	/* Init the jobs queue. */
-	threadpool_queue_init(&(pool->tasks_queue), queue_size);
-
-	/* Init the free tasks queue. */
-	threadpool_queue_init(&(pool->free_tasks_queue), queue_size);
-	/* Add all the free tasks to the free tasks queue. */
-	for (i = 0; i < queue_size; i++) {
-		threadpool_task_init((pool->tasks) + i);
-		if (threadpool_queue_enqueue(&(pool->free_tasks_queue),(pool->tasks) + i)) {
-			REPORT_ERROR("Failed to a task to the free tasks queue during initialization.");
-			free(pool);
-			return NULL;
-		}
-	}
-
-	/* Create the thr_arr. */
-	if ((pool->thr_arr = (pthread_t*) malloc(sizeof(pthread_t) * num_of_threads)) == NULL) {
-		perror("malloc: ");
-		free(pool);
-		return NULL;
-	}
-
-	/* Start the worker threads. */
-	for (pool->num_of_threads = 0; pool->num_of_threads < num_of_threads; (pool->num_of_threads)++) {
-		if (pthread_create(&(pool->thr_arr[pool->num_of_threads]),NULL,worker_thr_routine,pool)) {
-			perror("pthread_create:");
-
-			threadpool_free(pool,0);
-
-			return NULL;
-		}
-	}
-
-	return pool;
-}
-
-int threadpool_add_task(struct threadpool *pool, void (*routine)(void*), void *data, int blocking)
-{
-	struct threadpool_task *task;
-
-	if (pool == NULL) {
-		REPORT_ERROR("The threadpool received as argument is NULL.");
-		return -1;
-	}
-
-	if (pthread_mutex_lock(&(pool->free_tasks_mutex))) {
-		perror("pthread_mutex_lock: ");
-		return -1;
-	}
-
-	/* Check if the free task queue is empty. */
-	while (threadpool_queue_is_empty(&(pool->free_tasks_queue))) {
-		if (!blocking) {
-			/* Return immediately if the command is non blocking. */
-			if (pthread_mutex_unlock(&(pool->free_tasks_mutex))) {
-				perror("pthread_mutex_unlock: ");
-				return -1;
-			}
-
-			return -2;
-		}
-
-		/* blocking is set to 1, wait until free_tasks queue has a task to obtain. */
-		if (pthread_cond_wait(&(pool->free_tasks_cond),&(pool->free_tasks_mutex))) {
-			perror("pthread_cond_wait: ");
-			if (pthread_mutex_unlock(&(pool->free_tasks_mutex))) {
-				perror("pthread_mutex_unlock: ");
-			}
-
-			return -1;
-		}
-	}
-
-	/* Obtain an empty task. */
-	if ((task = (struct threadpool_task*)threadpool_queue_dequeue(&(pool->free_tasks_queue))) == NULL) {
-		REPORT_ERROR("Failed to obtain an empty task from the free tasks queue.");
-		if (pthread_mutex_unlock(&(pool->free_tasks_mutex))) {
-			perror("pthread_mutex_unlock: ");
-		}
-
-		return -1;
-	}
-
-	if (pthread_mutex_unlock(&(pool->free_tasks_mutex))) {
-		perror("pthread_mutex_unlock: ");
-		return -1;
-	}
-
-	task->data = data;
-	task->routine_cb = routine;
-
-	/* Add the task, to the tasks queue. */
-	if (pthread_mutex_lock(&(pool->mutex))) {
-		perror("pthread_mutex_lock: ");
-		return -1;
-	}
-
-	if (threadpool_queue_enqueue(&(pool->tasks_queue),task)) {
-		REPORT_ERROR("Failed to add a new task to the tasks queue.");
-		if (pthread_mutex_unlock(&(pool->mutex))) {
-			perror("pthread_mutex_unlock: ");
-		}
-		return -1;
-	}
-
-	if (threadpool_queue_getsize(&(pool->tasks_queue)) == 1) {
-		/* Notify all worker threads that there are new jobs. */
-		if (pthread_cond_broadcast(&(pool->cond))) {
-			perror("pthread_cond_broadcast: ");
-			if (pthread_mutex_unlock(&(pool->mutex))) {
-				perror("pthread_mutex_unlock: ");
-			}
-
-			return -1;
-		}
-	}
-
-	if (pthread_mutex_unlock(&(pool->mutex))) {
-		perror("pthread_mutex_unlock: ");
-		return -1;
-	}
-
-	return 0;
-}
-
-void threadpool_free(struct threadpool *pool, int blocking)
-{
-	pthread_t thr;
-
-	if (blocking) {
-		stop_worker_thr_routines_cb(pool);
-	}
-	else {
-		if (pthread_create(&thr,NULL,stop_worker_thr_routines_cb,pool)) {
-			perror("pthread_create: ");
-			REPORT_ERROR("Warning! will not be able to free memory allocation. This will cause a memory leak.");
-			pool->stop_flag = 1;
-		}
-	}
+    pthread_mutex_unlock(&(pool->lock));
+    pthread_exit(NULL);
+    return(NULL);
 }

@@ -208,8 +208,8 @@ int main (int argc, char** argv) {
 
 
     /* Create a threadpool of thread workers. */
-    struct threadpool *thread_pool;
-    if ((thread_pool = threadpool_init(pars->n_threads, n_comb)) == NULL)
+    threadpool_t *thread_pool;
+    if ((thread_pool = threadpool_create(pars->n_threads, n_comb, 0)) == NULL)
       error(__FUNCTION__, "failed to create thread pool!");
 
 
@@ -246,11 +246,10 @@ int main (int argc, char** argv) {
 	pth[comb_id].i2 = i2;
 
 	// Add task to thread pool
-	int ret = threadpool_add_task(thread_pool, gen_dist_slave, (void*) &pth[comb_id], 0);
-	if (ret == -1)
+	int ret = threadpool_add(thread_pool, gen_dist_slave, (void*) &pth[comb_id], 0);
+
+	if (ret != 0)
 	  error(__FUNCTION__, "error while adding task to thread pool!");
-	else if (ret == -2)
-	  error(__FUNCTION__, "task did not execute since the pool was overloaded!");
 
 	comb_id++;
 
@@ -263,8 +262,8 @@ int main (int argc, char** argv) {
     //////////////////////////
     // Wait for all threads //
     //////////////////////////
-    threadpool_free(thread_pool,1);
-
+    if(threadpool_destroy(thread_pool,1) != 0)
+      error(__FUNCTION__, "error destroying threadpool!");
 
     if(n_comb != comb_id)
       error(__FUNCTION__, "some combinations are missing!");
