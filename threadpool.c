@@ -236,6 +236,12 @@ int threadpool_destroy(threadpool_t *pool, int flags)
     return err;
 }
 
+void threadpool_wait(threadpool_t *pool, uint wait_time)
+{
+  while(pool->count)
+    sleep(wait_time);
+}
+
 int threadpool_free(threadpool_t *pool)
 {
     if(pool == NULL || pool->started > 0) {

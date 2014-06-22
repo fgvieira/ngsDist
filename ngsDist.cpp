@@ -83,7 +83,7 @@ int main (int argc, char** argv) {
   uint64_t n_comb = (pow(pars->n_ind, 2) - pars->n_ind) / 2;
   if(pars->verbose >= 1)
     printf("==> Analysis will be run in %lu combinations\n", n_comb);
-  // Adjust thread number to chunks
+  // Adjust thread number to combinations
   if(n_comb < pars->n_threads){
     if(pars->verbose >= 1)
       printf("==> Fewer combinations (%ld) than threads (%d). Reducing the number of threads...\n", n_comb, pars->n_threads);
@@ -146,7 +146,7 @@ int main (int argc, char** argv) {
   if(pars->verbose >= 1)
     printf("==> Reading genotype posterior probabilities\n");
   pars->in_geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_probs, pars->n_ind, pars->n_sites);
-  
+
   // Initialize geno_lkl pointers
   pars->geno_lkl = new double**[pars->n_ind];
   for(uint64_t i = 0; i < pars->n_ind; i++)
@@ -178,20 +178,31 @@ int main (int argc, char** argv) {
     error(__FUNCTION__, "cannot open output file!");
  
 
-  //////////////////
-  // Analyze Data //
-  //////////////////
-  fflush(stdout);
-  uint64_t comb_id = 0;
-  double** dist_matrix = init_double(pars->n_ind, pars->n_ind, 0);
 
+  /////////////////////
+  // Prepare threads //
+  /////////////////////
   // Create pthread structure array
   pth_struct* pth = new pth_struct[n_comb];
   // Initialize pars and distance matrix pointers
+  uint64_t comb_id = 0;
+  double** dist_matrix = init_double(pars->n_ind, pars->n_ind, 0);
   for(comb_id = 0; comb_id < n_comb; comb_id++){
     pth[comb_id].pars = pars;
     pth[comb_id].dist_matrix = dist_matrix;
   }
+
+  // Create threadpool
+  threadpool_t *thread_pool;
+  if( (thread_pool = threadpool_create(pars->n_threads, n_comb, 0)) == NULL )
+    error(__FUNCTION__, "failed to create thread pool!");
+
+
+
+  //////////////////
+  // Analyze Data //
+  //////////////////
+  fflush(stdout);
 
   // Loop for bootstrap analyses
   for(uint64_t rep = 0; rep <= pars->n_boot_rep; rep++){
@@ -207,15 +218,13 @@ int main (int argc, char** argv) {
     }
 
 
-    /* Create a threadpool of thread workers. */
-    threadpool_t *thread_pool;
-    if ((thread_pool = threadpool_create(pars->n_threads, n_comb, 0)) == NULL)
-      error(__FUNCTION__, "failed to create thread pool!");
-
-
     // Map from in_geno_lkl data to geno_lkl
+    if(pars->verbose >= 2)
+      printf("> Mapping positions...\n");
+
     if(pars->n_sites % pars->boot_block_size != 0)
       error(__FUNCTION__, "bootstrap block size must be a multiple of the total length!");
+
     uint64_t n_blocks = (uint64_t) ceil(pars->n_sites/pars->boot_block_size);
     
     for(uint64_t b = 0; b < n_blocks; b++){
@@ -237,7 +246,7 @@ int main (int argc, char** argv) {
 
 
     if(pars->verbose >= 2)
-      printf("> Calculating pairwise genetic distances\n");
+      printf("> Calculating pairwise genetic distances...\n");
 
     for(uint64_t i1 = 0; i1 < pars->n_ind; i1++)
       for(uint64_t i2 = i1+1; i2 < pars->n_ind; i2++){
@@ -246,12 +255,8 @@ int main (int argc, char** argv) {
 	pth[comb_id].i2 = i2;
 
 	// Add task to thread pool
-	int ret = threadpool_add(thread_pool, gen_dist_slave, (void*) &pth[comb_id], 0);
-
-	if (ret != 0)
+	if( threadpool_add(thread_pool, gen_dist_slave, (void*) &pth[comb_id++], 0) != 0)
 	  error(__FUNCTION__, "error while adding task to thread pool!");
-
-	comb_id++;
 
 	if(pars->verbose >= 5)
 	  printf("> Launched thread for individuals %lu and %lu (comb# %lu).\n", i1, i2, comb_id);
@@ -262,11 +267,11 @@ int main (int argc, char** argv) {
     //////////////////////////
     // Wait for all threads //
     //////////////////////////
-    if(threadpool_destroy(thread_pool,1) != 0)
-      error(__FUNCTION__, "error destroying threadpool!");
+    threadpool_wait(thread_pool, 1);
 
     if(n_comb != comb_id)
       error(__FUNCTION__, "some combinations are missing!");
+
 
 
     ///////////////////////////
@@ -283,6 +288,10 @@ int main (int argc, char** argv) {
     }
 
   }
+
+  if(threadpool_destroy(thread_pool, threadpool_graceful) != 0)
+    error(__FUNCTION__, "error freeing threadpool!");
+
   fclose(out_fh);
 
 
