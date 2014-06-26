@@ -14,14 +14,14 @@ const uint64_t BUFF_LEN = 100000;
 
 // Struct to store all input arguments //GZIP
 typedef struct {
-  char* in_geno;
+  char *in_geno;
   bool in_bin;
-  double*** in_geno_lkl;
-  double*** geno_lkl;
+  double ***in_geno_lkl;
+  double ***geno_lkl;
   uint64_t n_ind;
   uint64_t n_sites;
-  char* in_labels;
-  char** ind_labels;
+  char *in_labels;
+  char **ind_labels;
   bool in_probs;
   bool in_logscale;
   bool call_geno;
@@ -33,13 +33,14 @@ typedef struct {
   bool version;
   uint verbose;
   uint seed;
+  gsl_rng *rnd_gen;
 } params;
 
 
 // Pthread structure
 typedef struct {
-  params* pars;
-  double** dist_matrix;
+  params *pars;
+  double **dist_matrix;
   uint64_t i1;
   uint64_t i2;
 } pth_struct;

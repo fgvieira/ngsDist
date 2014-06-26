@@ -26,6 +26,7 @@
 
 char const* version = "0.0.1b";
 
+void rnd_map_data(params *pars, uint64_t n_blocks);
 
 int main (int argc, char** argv) {
   /////////////////////
@@ -149,8 +150,10 @@ int main (int argc, char** argv) {
 
   // Initialize geno_lkl pointers
   pars->geno_lkl = new double**[pars->n_ind];
-  for(uint64_t i = 0; i < pars->n_ind; i++)
+  for(uint64_t i = 0; i < pars->n_ind; i++){
     pars->geno_lkl[i] = new double*[pars->n_sites+1];
+    memcpy(pars->geno_lkl[i], pars->in_geno_lkl[i], (pars->n_sites+1)*sizeof(double*));
+  }
 
   for(uint64_t i = 0; i < pars->n_ind; i++)
     for(uint64_t s = 1; s <= pars->n_sites; s++){
@@ -165,8 +168,8 @@ int main (int argc, char** argv) {
   // Initialize random number generator
   if(pars->verbose >= 2)
     printf("==> Setting seed for random number generator\n");
-  gsl_rng* rnd_gen = gsl_rng_alloc(gsl_rng_taus);
-  gsl_rng_set(rnd_gen, pars->seed);
+  pars->rnd_gen = gsl_rng_alloc(gsl_rng_taus);
+  gsl_rng_set(pars->rnd_gen, pars->seed);
 
  
 
@@ -225,26 +228,11 @@ int main (int argc, char** argv) {
     if(pars->n_sites % pars->boot_block_size != 0)
       error(__FUNCTION__, "bootstrap block size must be a multiple of the total length!");
 
-    uint64_t n_blocks = (uint64_t) ceil(pars->n_sites/pars->boot_block_size);
-    
-    for(uint64_t b = 0; b < n_blocks; b++){
-      uint64_t rnd_b = b;
-      if(rep > 0)
-        rnd_b = (uint64_t) floor( draw_rnd(rnd_gen, 0, n_blocks) );
+    // If not rep 0, then random sample blocks from original dataset
+    if(rep > 0)
+      rnd_map_data(pars, (uint64_t) ceil(pars->n_sites/pars->boot_block_size) );
 
-      for(uint64_t s = 1; s <= pars->boot_block_size; s++){
-	uint64_t orig =     b * pars->boot_block_size + s;
-	uint64_t rnd  = rnd_b * pars->boot_block_size + s;
-
-	if(pars->verbose > 5)
-	  printf("block: %lu\torig_site: %lu\trand_block:%lu\trand_site: %lu\n", b, orig, rnd_b, rnd);
-
-	for(uint64_t i = 0; i < pars->n_ind; i++)
-	  pars->geno_lkl[i][orig] = pars->in_geno_lkl[i][rnd];
-      }
-    }
-
-
+    // Calculate pairwise genetic distances
     if(pars->verbose >= 2)
       printf("> Calculating pairwise genetic distances...\n");
 
@@ -255,8 +243,17 @@ int main (int argc, char** argv) {
 	pth[comb_id].i2 = i2;
 
 	// Add task to thread pool
-	if( threadpool_add(thread_pool, gen_dist_slave, (void*) &pth[comb_id++], 0) != 0)
-	  error(__FUNCTION__, "error while adding task to thread pool!");
+	int ret = threadpool_add(thread_pool, gen_dist_slave, (void*) &pth[comb_id++], 0);
+	if(ret == -1)
+          error(__FUNCTION__, "invalid thread pool!");
+	else if(ret == -2)
+          error(__FUNCTION__, "thread pool lock failure!");
+	else if(ret == -3)
+          error(__FUNCTION__, "queue full!");
+	else if(ret == -4)
+          error(__FUNCTION__, "thread pool is shutting down!");
+	else if(ret == -5)
+          error(__FUNCTION__, "thread failure!");
 
 	if(pars->verbose >= 5)
 	  printf("> Launched thread for individuals %lu and %lu (comb# %lu).\n", i1, i2, comb_id);
@@ -267,7 +264,7 @@ int main (int argc, char** argv) {
     //////////////////////////
     // Wait for all threads //
     //////////////////////////
-    threadpool_wait(thread_pool, 1);
+    threadpool_wait(thread_pool, 0.1);
 
     if(n_comb != comb_id)
       error(__FUNCTION__, "some combinations are missing!");
@@ -289,8 +286,9 @@ int main (int argc, char** argv) {
 
   }
 
+  threadpool_wait(thread_pool, 0.1);
   if(threadpool_destroy(thread_pool, threadpool_graceful) != 0)
-    error(__FUNCTION__, "error freeing threadpool!");
+    error(__FUNCTION__, "cannot free thread pool!");
 
   fclose(out_fh);
 
@@ -308,12 +306,12 @@ int main (int argc, char** argv) {
   free_ptr((void***) pars->in_geno_lkl, pars->n_ind, pars->n_sites+1);
   free_ptr((void**) pars->ind_labels, pars->n_ind);
   //free_ptr((void*) pars->in_geno);
+  gsl_rng_free(pars->rnd_gen);
 
   if(pars->verbose >= 1)
     printf("Done!\n");
-  delete pars;
 
-  gsl_rng_free(rnd_gen);
+  delete pars;
 
   return 0;
 }
@@ -321,7 +319,7 @@ int main (int argc, char** argv) {
 
 
 
-double gen_dist(params* p, uint64_t i1, uint64_t i2){
+double gen_dist(params *p, uint64_t i1, uint64_t i2){
   double dist = 0;
 
   Matrix<double> GL1 = alloc(1,N_GENO);
@@ -352,8 +350,30 @@ double gen_dist(params* p, uint64_t i1, uint64_t i2){
 
 
 
-void gen_dist_slave(void* pth){
+void gen_dist_slave(void *pth){
   pth_struct* p = (pth_struct*) pth;
 
   p->dist_matrix[p->i1][p->i2] = p->dist_matrix[p->i2][p->i1] = gen_dist(p->pars, p->i1, p->i2);
+}
+
+
+
+void rnd_map_data(params *pars, uint64_t n_blocks){
+  uint64_t block, rnd_block;
+  uint64_t block_s, rnd_block_s;
+
+  for(block = 0; block < n_blocks; block++){
+    rnd_block = (uint64_t) floor( draw_rnd(pars->rnd_gen, 0, n_blocks) );
+
+    for(uint64_t s = 1; s <= pars->boot_block_size; s++){
+      block_s = block * pars->boot_block_size + s;
+      rnd_block_s = rnd_block * pars->boot_block_size + s;
+
+      if(pars->verbose > 5)
+	printf("block: %lu\torig_site: %lu\trand_block:%lu\trand_site: %lu\n", block, block_s, rnd_block, rnd_block_s);
+
+      for(uint64_t i = 0; i < pars->n_ind; i++)
+	pars->geno_lkl[i][block_s] = pars->in_geno_lkl[i][rnd_block_s];
+    }
+  }
 }

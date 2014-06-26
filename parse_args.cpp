@@ -22,6 +22,7 @@ void init_pars(params *pars) {
   pars->version = false;
   pars->verbose = 1;
   pars->seed = time(NULL);
+  pars->rnd_gen = NULL;
 }
 
 

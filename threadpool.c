@@ -76,6 +76,7 @@ struct threadpool_t {
   pthread_t *threads;
   threadpool_task_t *queue;
   int thread_count;
+  int run_thread_count;
   int queue_size;
   int head;
   int tail;
@@ -105,7 +106,7 @@ threadpool_t *threadpool_create(int thread_count, int queue_size, int flags)
     }
 
     /* Initialize */
-    pool->thread_count = 0;
+    pool->thread_count = pool->run_thread_count = 0;
     pool->queue_size = queue_size;
     pool->head = pool->tail = pool->count = 0;
     pool->shutdown = pool->started = 0;
@@ -236,10 +237,26 @@ int threadpool_destroy(threadpool_t *pool, int flags)
     return err;
 }
 
-void threadpool_wait(threadpool_t *pool, uint wait_time)
+int threadpool_wait(threadpool_t *pool, uint wait_time = 1)
 {
-  while(pool->count)
+  bool wait = true;
+
+  while(wait) {
+    //printf("%d\n", pool->run_thread_count);
     sleep(wait_time);
+
+    if(pthread_mutex_lock(&(pool->lock)) != 0)
+      return threadpool_lock_failure;
+
+    if(pool->count == 0 &&
+       pool->run_thread_count == 0)
+      wait = false;
+
+    if(pthread_mutex_unlock(&(pool->lock)) != 0)
+      return threadpool_lock_failure;
+  }
+  
+  return 0;
 }
 
 int threadpool_free(threadpool_t *pool)
@@ -291,12 +308,17 @@ static void *threadpool_thread(void *threadpool)
         task.argument = pool->queue[pool->head].argument;
 	pool->head = (pool->head + 1) % pool->queue_size;
         pool->count -= 1;
+	pool->run_thread_count++;
 
         /* Unlock */
         pthread_mutex_unlock(&(pool->lock));
 
         /* Get to work */
         (*(task.function))(task.argument);
+
+	pthread_mutex_lock(&(pool->lock));
+	pool->run_thread_count--;
+	pthread_mutex_unlock(&(pool->lock));
     }
 
     pool->started--;
