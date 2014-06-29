@@ -237,13 +237,16 @@ int threadpool_destroy(threadpool_t *pool, int flags)
     return err;
 }
 
-int threadpool_wait(threadpool_t *pool, uint wait_time = 1)
+int threadpool_wait(threadpool_t *pool, unsigned int wait_time)
 {
   bool wait = true;
 
   while(wait) {
-    //printf("%d\n", pool->run_thread_count);
-    sleep(wait_time);
+    // Sleep for wait_time miliseconds
+    struct timespec wait_time_t = {0};
+    wait_time_t.tv_sec = 0;
+    wait_time_t.tv_nsec = wait_time * 1000000L;
+    nanosleep(&wait_time_t, (struct timespec *)NULL);
 
     if(pthread_mutex_lock(&(pool->lock)) != 0)
       return threadpool_lock_failure;

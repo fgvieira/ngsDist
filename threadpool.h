@@ -72,6 +72,16 @@ int threadpool_add(threadpool_t *pool, void (*routine)(void *),
                    void *arg, int flags);
 
 /**
+ * @function threadpool_wait
+ * @brief Waits for all current jobs to finish.
+ * @param pool        Thread pool.
+ * @param wait_time   Waiting time before rechecking queue.
+ * @return 0 if all goes well, negative values in case of error (@see
+ * threadpool_error_t for codes).
+ */
+int threadpool_wait(threadpool_t *pool, unsigned int wait_time = 100);
+
+/**
  * @function threadpool_destroy
  * @brief Stops and destroys a thread pool.
  * @param pool  Thread pool to destroy.

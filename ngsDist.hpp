@@ -1,8 +1,5 @@
 #pragma once
 
-#include <pthread.h>
-#include <semaphore.h>
-
 #include "shared.hpp"
 
 using namespace std;
