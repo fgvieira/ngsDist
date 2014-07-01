@@ -130,7 +130,7 @@ int main (int argc, char** argv) {
     else if(ret != (int64_t) pars->n_ind)
       error(__FUNCTION__, "wrong number of labels provided!");
   }else{
-    pars->ind_labels = init_char(pars->n_ind, BUFF_LEN, (const char*) "Ind_#");
+    pars->ind_labels = init_ptr(pars->n_ind, BUFF_LEN, (const char*) "Ind_#");
     // Tweak initiation value (replace # by number)
     for(uint64_t i = 0; i < pars->n_ind; i++){
       char* pch = strchr(pars->ind_labels[i], '#');
@@ -189,7 +189,7 @@ int main (int argc, char** argv) {
   pth_struct* pth = new pth_struct[n_comb];
   // Initialize pars and distance matrix pointers
   uint64_t comb_id = 0;
-  double** dist_matrix = init_double(pars->n_ind, pars->n_ind, 0);
+  double** dist_matrix = init_ptr(pars->n_ind, pars->n_ind, 0.0);
   for(comb_id = 0; comb_id < n_comb; comb_id++){
     pth[comb_id].pars = pars;
     pth[comb_id].dist_matrix = dist_matrix;
@@ -327,7 +327,7 @@ double gen_dist(params *p, uint64_t i1, uint64_t i2){
   int dim = GL1.y*GL2.y;
 
   for(uint64_t s = 1; s <= p->n_sites; s++){
-    double* sfs = init_double(dim, (double) 1/dim);
+    double* sfs = init_ptr(dim, (double) 1/dim);
     GL1.mat[0][0] = p->geno_lkl[i1][s][0];
     GL1.mat[0][1] = p->geno_lkl[i1][s][1];
     GL1.mat[0][2] = p->geno_lkl[i1][s][2];
