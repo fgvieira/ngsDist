@@ -44,5 +44,5 @@ Executables are built into the main directory. If you wish to clean all binaries
 As input `ngsDist` needs a Genotype Likelihood (GL) file, formatted as 3*n_ind*n_sites, either in text (gziped) of binary doubles.
 
 ### Thread pool
-The thread pool	implementation was made	by Mathias Brossard and is freely available from:
+The thread pool	implementation was adapted from Mathias Brossard's and is freely available from:
 https://github.com/mbrossard/threadpool

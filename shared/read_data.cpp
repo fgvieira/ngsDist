@@ -1,4 +1,6 @@
-#include "shared.hpp"
+
+#include "read_data.hpp"
+#include "gen_func.hpp"
 
 // Reads both called genotypes (1 field per site and indiv), genotype lkls or genotype post probs (3 fields per site and indiv)
 double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, uint64_t n_sites){
@@ -10,12 +12,12 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
   char *buf = init_ptr(BUFF_LEN, (const char*) '\0');
 
   // Allocate memory
-  double ***geno = init_ptr(n_ind, n_sites+1, N_GENO, -INFINITY);
+  double ***geno = init_ptr(n_ind, n_sites+1, N_GENO, -INF);
   
   // Open GENO file
   gzFile in_geno_fh = gzopen(in_geno, in_bin ? "rb" : "r");
   if(in_geno_fh == NULL)
-    error(__FUNCTION__, "cannot open genotype file!");
+    error(__FUNCTION__, "cannot open GENO file!");
 
   for(uint64_t s = 1; s <= n_sites; s++){
     if(in_bin){
@@ -31,7 +33,6 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
       // Check if empty
       if(strlen(buf) == 0)
 	continue;
-
       // Parse input line into array
       n_fields = split(buf, (const char*) " \t", &t);
 
@@ -69,4 +70,61 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
 }
 
 
-// normalize GL!?!!?
+
+
+
+
+
+double* read_pos(char *in_pos, uint64_t n_ind, uint64_t n_sites){
+  uint64_t n_fields;
+  char **t;
+  char *buf = init_ptr(BUFF_LEN, (const char*) '\0');
+
+  char *prev_chr = init_ptr(BUFF_LEN, (const char*) '\0');
+  uint64_t prev_pos = 0;
+
+  // Allocate memory
+  double *pos_dist = init_ptr(n_sites+1, INFINITY);
+
+  // Open file
+  gzFile in_pos_fh = gzopen(in_pos, "r");
+  if(in_pos_fh == NULL)
+    error(__FUNCTION__, "cannot open POS file!");
+
+  for(uint64_t s = 1; s <= n_sites; s++){
+    if( gzgets(in_pos_fh, buf, BUFF_LEN) == NULL)
+      error(__FUNCTION__, "cannot read POS file!");
+    // Remove trailing newline
+    chomp(buf);
+    // Check if empty
+    if(strlen(buf) == 0)
+      continue;
+    // Parse input line into array
+    n_fields = split(buf, (const char*) " \t", &t);
+
+    // Check if header and skip
+    if(!n_fields){
+      s--;
+      continue;
+    }
+
+    if(n_fields < 2)
+      error(__FUNCTION__, "wrong POS file format!");
+
+    if(strcmp(prev_chr, t[0]) == 0 || strlen(prev_chr) == 0)
+      pos_dist[s] = strtod(t[1], NULL) - prev_pos;
+    else {
+      pos_dist[s] = INFINITY;
+      strcpy(prev_chr, t[0]);
+    }
+    prev_pos = strtoul(t[1], NULL, 0);
+
+    delete [] t;
+  }
+
+  gzclose(in_pos_fh);
+  delete [] buf;
+  delete [] prev_chr;
+
+  return pos_dist;
+}

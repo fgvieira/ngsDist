@@ -20,9 +20,7 @@
 */
 
 #include "ngsDist.hpp"
-#include "read_data.cpp"
 #include "emOptim2.cpp"
-#include "threadpool.c"
 
 char const* version = "0.0.1b";
 
@@ -158,8 +156,10 @@ int main (int argc, char** argv) {
   for(uint64_t i = 0; i < pars->n_ind; i++)
     for(uint64_t s = 1; s <= pars->n_sites; s++){
       // Call genotypes
-      if(pars->call_geno)
-	call_geno(pars->in_geno_lkl[i][s], N_GENO, pars->in_logscale);
+      if(pars->call_geno){
+	call_geno(pars->in_geno_lkl[i][s], N_GENO);
+	pars->in_logscale = true;
+      }
       // Convert space
       if(pars->in_logscale)
 	conv_space(pars->in_geno_lkl[i][s], N_GENO, exp);

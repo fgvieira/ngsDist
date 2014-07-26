@@ -13,17 +13,6 @@
 
  */
 
-#include <cstdio>
-#include <zlib.h>
-#include <vector>
-#include <cstdlib>
-#include <cstring>
-#include <sys/stat.h>
-#include <cmath>
-#include <cfloat>
-#include <signal.h>
-#include <cassert>
-#include <pthread.h>
 
 template <typename T>
 struct Matrix{

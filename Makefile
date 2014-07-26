@@ -1,22 +1,28 @@
 CC=gcc
 CXX=g++
 
-CFLAGS = -g -Wall
-#CFLAGS = -O3 -Wall
+CFLAGS = -g -Wall -I./shared
+#CFLAGS = -O3 -Wall -I./shared
 DFLAGS = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
 LIB = -lgsl -lgslcblas -lz -lpthread
 
-all: ngsDist
+SHARED_LIB = gen_func.cpp read_data.cpp threadpool.c
 
 
-parse_args.o: parse_args.cpp ngsDist.hpp
+
+all: $(SHARED_LIB) parse_args ngsDist
+	$(CXX) $(DFLAGS) *.o $(LIB) -o ngsDist
+
+
+
+$(SHARED_LIB):
+	$(CXX) $(CFLAGS) $(DFLAGS) -c shared/$@
+
+parse_args:
 	$(CXX) $(CFLAGS) $(DFLAGS) -c parse_args.cpp
 
-shared.o: shared.cpp shared.hpp
-	$(CXX) $(CFLAGS) $(DFLAGS) -c shared.cpp
-
-ngsDist: ngsDist.cpp parse_args.o shared.o
-	$(CXX) $(CFLAGS) $(DFLAGS) ngsDist.cpp parse_args.o shared.o $(LIB) -o ngsDist
+ngsDist:
+	$(CXX) $(CFLAGS) $(DFLAGS) -c ngsDist.cpp $(LIB)
 
 test:
 	@cd examples/; bash test.sh 2> test.log; cd ../
