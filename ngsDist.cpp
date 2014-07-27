@@ -158,8 +158,12 @@ int main (int argc, char** argv) {
       // Call genotypes
       if(pars->call_geno){
 	call_geno(pars->in_geno_lkl[i][s], N_GENO);
-	pars->in_logscale = true;
+	pars->in_probs = false;
       }
+
+      if(!pars->in_probs)
+	pars->in_logscale = true;
+
       // Convert space
       if(pars->in_logscale)
 	conv_space(pars->in_geno_lkl[i][s], N_GENO, exp);
