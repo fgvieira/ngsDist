@@ -12,6 +12,8 @@ void init_pars(params *pars) {
   pars->in_probs = false;
   pars->in_logscale = false;
   pars->call_geno = false;
+  pars->N_thresh = 0;
+  pars->call_thresh = 0;
   // Distance score matrix based on Eq 8.1 from Gronau et al 2011 and Del Vecchyo et al. 2014
   pars->score[0][0] = pars->score[1][1] = pars->score[2][2] = 0; 
   pars->score[0][1] = pars->score[1][0] = pars->score[1][2] = pars->score[2][1] = 0.5; 
@@ -38,7 +40,9 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
       {"labels", required_argument, NULL, 'L'},
       {"probs", no_argument, NULL, 'p'},
       {"log_scale", no_argument, NULL, 'l'},
-      {"call_geno", no_argument, NULL, 'G'},
+      {"call_geno", no_argument, NULL, 'c'},
+      {"N_thresh", required_argument, NULL, 'N'},
+      {"call_thresh", required_argument, NULL, 'C'},
       {"alt_het_diff", no_argument, NULL, 'd'},
       {"n_boot_rep", required_argument, NULL, 'b'},
       {"boot_block_size", required_argument, NULL, 'B'},
@@ -51,7 +55,7 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
     };
   
   int c = 0;
-  while ( (c = getopt_long_only(argc, argv, "g:n:s:L:plGdb:B:o:x:vV:S:", long_options, NULL)) != -1 )
+  while ( (c = getopt_long_only(argc, argv, "g:n:s:L:plcN:C:db:B:o:x:vV:S:", long_options, NULL)) != -1 )
     switch (c) {
     case 'g':
       pars->in_geno = optarg;
@@ -71,7 +75,15 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
     case 'l':
       pars->in_logscale = true;
       break;
-    case 'G':
+    case 'c':
+      pars->call_geno = true;
+      break;
+    case 'N':
+      pars->N_thresh = atof(optarg);
+      pars->call_geno = true;
+      break;
+    case 'C':
+      pars->call_thresh = atof(optarg);
       pars->call_geno = true;
       break;
     case 'd':

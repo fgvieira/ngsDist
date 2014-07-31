@@ -20,6 +20,8 @@ typedef struct {
   bool in_probs;
   bool in_logscale;
   bool call_geno;
+  double N_thresh;
+  double call_thresh;
   double score[N_GENO][N_GENO];
   uint64_t n_boot_rep;
   uint64_t boot_block_size;
