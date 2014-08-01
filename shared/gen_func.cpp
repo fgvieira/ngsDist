@@ -114,6 +114,21 @@ void conv_space(double *geno, int n_geno, double (*func)(double)) {
 
 
 
+void post_prob(double *pp, double *lkl, double *prior, uint64_t n_geno){
+  for(uint64_t cnt = 0; cnt < n_geno; cnt++){
+    pp[cnt] = lkl[cnt];
+    if(prior != NULL)
+      pp[cnt] += prior[cnt];
+  }
+
+  double norm = logsum(pp, n_geno);
+
+  for(uint64_t cnt = 0; cnt < n_geno; cnt++)
+    pp[cnt] -= norm;
+}
+
+
+
 //function does: log(exp(a)+exp(b)) while protecting for underflow
 double logsum(double *a, uint64_t n){
   // Find maximum value

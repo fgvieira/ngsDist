@@ -74,8 +74,10 @@ int main (int argc, char** argv) {
     error(__FUNCTION__, "Number of individuals (-n_ind) missing!");
   if(pars->n_sites == 0)
     error(__FUNCTION__, "Number of sites (-n_sites) missing!");
+  if(pars->call_geno && !pars->in_probs)  
+    error(__FUNCTION__, "Can only call genotypes from probabilities!");
   
-  
+
   
   ///////////////////////
   // Adjust Parameters //
@@ -90,6 +92,9 @@ int main (int argc, char** argv) {
       printf("==> Fewer combinations (%ld) than threads (%d). Reducing the number of threads...\n", n_comb, pars->n_threads);
     pars->n_threads = n_comb;
   }
+  // If input are genotypes                                                                                                                                                                                                                                                
+  if(!pars->in_probs)
+    pars->in_logscale = true;
 
 
 
@@ -157,12 +162,13 @@ int main (int argc, char** argv) {
 
   for(uint64_t i = 0; i < pars->n_ind; i++)
     for(uint64_t s = 1; s <= pars->n_sites; s++){
+      // Normalize GL
+      if(pars->in_logscale)
+	post_prob(pars->in_geno_lkl[i][s], pars->in_geno_lkl[i][s], NULL, N_GENO);
+
       // Call genotypes
       if(pars->call_geno)
 	call_geno(pars->in_geno_lkl[i][s], N_GENO, pars->N_thresh, pars->call_thresh, pars->in_logscale);
-
-      if(!pars->in_probs)
-	pars->in_logscale = true;
 
       // Convert space
       if(pars->in_logscale)
@@ -229,12 +235,11 @@ int main (int argc, char** argv) {
     if(pars->verbose >= 2)
       printf("> Mapping positions...\n");
 
-    if(pars->n_sites % pars->boot_block_size != 0)
-      error(__FUNCTION__, "bootstrap block size must be a multiple of the total length!");
-
-    // If not rep 0, then random sample blocks from original dataset
-    if(rep > 0)
-      rnd_map_data(pars, (uint64_t) ceil(pars->n_sites/pars->boot_block_size) );
+    // If not rep 0, then adjust number of sites and random sample blocks from original dataset
+    if(rep > 0){
+      pars->n_sites -= pars->n_sites % pars->boot_block_size;
+      rnd_map_data(pars, pars->n_sites/pars->boot_block_size);
+    }
 
     // Calculate pairwise genetic distances
     if(pars->verbose >= 2)
@@ -259,7 +264,7 @@ int main (int argc, char** argv) {
 	else if(ret == -5)
           error(__FUNCTION__, "thread failure!");
 
-	if(pars->verbose >= 5)
+	if(pars->verbose >= 6)
 	  printf("> Launched thread for individuals %lu and %lu (comb# %lu).\n", i1, i2, comb_id);
       }
 
@@ -333,6 +338,11 @@ double gen_dist(params *p, uint64_t i1, uint64_t i2){
   int dim = GL1.y*GL2.y;
 
   for(uint64_t s = 1; s <= p->n_sites; s++){
+    // Skip missing data
+    if(p->geno_lkl[i1][s][0] + p->geno_lkl[i1][s][1] + p->geno_lkl[i1][s][2] < EPSILON ||
+       p->geno_lkl[i2][s][0] + p->geno_lkl[i2][s][1] + p->geno_lkl[i2][s][2] < EPSILON)
+      continue;
+
     double* sfs = init_ptr(dim, (double) 1/dim);
     GL1.mat[0][0] = p->geno_lkl[i1][s][0];
     GL1.mat[0][1] = p->geno_lkl[i1][s][1];
@@ -340,10 +350,6 @@ double gen_dist(params *p, uint64_t i1, uint64_t i2){
     GL2.mat[0][0] = p->geno_lkl[i2][s][0];
     GL2.mat[0][1] = p->geno_lkl[i2][s][1];
     GL2.mat[0][2] = p->geno_lkl[i2][s][2];
-
-    if(GL1.mat[0][0] + GL1.mat[0][1] + GL1.mat[0][2] < EPSILON ||
-       GL2.mat[0][0] + GL2.mat[0][1] + GL2.mat[0][2] < EPSILON)
-      continue;
 
     em2(sfs, &GL1, &GL2, 0.001, 50, dim);
 
@@ -354,6 +360,9 @@ double gen_dist(params *p, uint64_t i1, uint64_t i2){
     cnt++;
     free_ptr(sfs);
   }
+
+  if(p->verbose >=5)
+    printf("\tFound %lu sites valid between Ind %lu and Ind %lu!\n", cnt, i1, i2);
 
   dalloc(GL1, 1);
   dalloc(GL2, 1);
@@ -381,7 +390,7 @@ void rnd_map_data(params *pars, uint64_t n_blocks){
       block_s = block * pars->boot_block_size + s;
       rnd_block_s = rnd_block * pars->boot_block_size + s;
 
-      if(pars->verbose > 5)
+      if(pars->verbose >= 5)
 	printf("block: %lu\torig_site: %lu\trand_block:%lu\trand_site: %lu\n", block, block_s, rnd_block, rnd_block_s);
 
       for(uint64_t i = 0; i < pars->n_ind; i++)
