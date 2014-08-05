@@ -41,7 +41,7 @@ int main (int argc, char** argv) {
 
   if(pars->verbose >= 1) {
     printf("==> Input Arguments:\n");
-    printf("\tgeno: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tlabels: %s\n\tprobs: %s\n\tlog_scale: %s\n\tcall_geno: %s\n\tN_thresh: %f\n\tcall_thresh: %f\n\thet_dist: %f\n\tn_boot_rep: %lu\n\tboot_block_size: %lu\n\tout_prefix: %s\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
+    printf("\tgeno: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tlabels: %s\n\tprobs: %s\n\tlog_scale: %s\n\tcall_geno: %s\n\tN_thresh: %f\n\tcall_thresh: %f\n\thet_dist: %f\n\tgeno_indep: %s\n\tn_boot_rep: %lu\n\tboot_block_size: %lu\n\tout_prefix: %s\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
 	   pars->in_geno,
 	   pars->n_ind,
            pars->n_sites,
@@ -52,6 +52,7 @@ int main (int argc, char** argv) {
 	   pars->N_thresh,
 	   pars->call_thresh,
 	   pars->score[1][1],
+	   pars->indpe_geno ? "true":"false",
 	   pars->n_boot_rep,
 	   pars->boot_block_size,
 	   pars->out_prefix,
@@ -94,6 +95,9 @@ int main (int argc, char** argv) {
       printf("==> Fewer combinations (%ld) than threads (%d). Reducing the number of threads...\n", n_comb, pars->n_threads);
     pars->n_threads = n_comb;
   }
+  // If input are genotypes (either called ot not) assume independence between genotypes (faster)
+  if(pars->call_geno || !pars->in_probs)
+    pars->indep_geno = true;
 
 
 
@@ -331,7 +335,6 @@ int main (int argc, char** argv) {
 
 
 double gen_dist(params *p, uint64_t i1, uint64_t i2){
-  bool indep_sites = (p->in_probs && !p->call_geno ? false : true);
   uint64_t cnt = 0;
   double dist = 0;
 
@@ -353,12 +356,12 @@ double gen_dist(params *p, uint64_t i1, uint64_t i2){
     GL2.mat[0][1] = p->geno_lkl[i2][s][1];
     GL2.mat[0][2] = p->geno_lkl[i2][s][2];
 
-    if(!indep_sites)
+    if(!p->indep_geno)
       em2(sfs, &GL1, &GL2, 0.001, 50, dim);
 
     for(uint64_t g1 = 0; g1 < N_GENO; g1++)
       for(uint64_t g2 = 0; g2 < N_GENO; g2++){
-	dist += p->score[g1][g2] * (indep_sites ? p->geno_lkl[i1][s][g1]*p->geno_lkl[i2][s][g2] : sfs[3*g1+g2]);
+	dist += p->score[g1][g2] * (p->indep_geno ? p->geno_lkl[i1][s][g1]*p->geno_lkl[i2][s][g2] : sfs[3*g1+g2]);
 
 	if(p->verbose >= 9)
 	  printf("%lu\t%lu <-> %lu\t%lu - %lu\t%f\t%f\n", s, i1, i2, g1, g2, p->geno_lkl[i1][s][g1]*p->geno_lkl[i2][s][g2], sfs[3*g1+g2]);

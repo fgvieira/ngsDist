@@ -18,6 +18,7 @@ void init_pars(params *pars) {
   pars->score[0][0] = pars->score[1][1] = pars->score[2][2] = 0; 
   pars->score[0][1] = pars->score[1][0] = pars->score[1][2] = pars->score[2][1] = 0.5; 
   pars->score[0][2] = pars->score[2][0] = 1; 
+  pars->indep_geno = false;
   pars->n_boot_rep = 0;
   pars->boot_block_size = 1;
   pars->out_prefix = NULL;
@@ -44,6 +45,7 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
       {"N_thresh", required_argument, NULL, 'N'},
       {"call_thresh", required_argument, NULL, 'C'},
       {"alt_het_diff", no_argument, NULL, 'd'},
+      {"indep_geno", no_argument, NULL, 'I'},
       {"n_boot_rep", required_argument, NULL, 'b'},
       {"boot_block_size", required_argument, NULL, 'B'},
       {"out_prefix", required_argument, NULL, 'o'},
@@ -55,7 +57,7 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
     };
   
   int c = 0;
-  while ( (c = getopt_long_only(argc, argv, "g:n:s:L:plcN:C:db:B:o:x:vV:S:", long_options, NULL)) != -1 )
+  while ( (c = getopt_long_only(argc, argv, "g:n:s:L:plcN:C:dIb:B:o:x:vV:S:", long_options, NULL)) != -1 )
     switch (c) {
     case 'g':
       pars->in_geno = optarg;
@@ -88,6 +90,9 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
       break;
     case 'd':
       pars->score[1][1] = 0.5;
+      break;
+    case 'I':
+      pars->indep_geno = true;
       break;
     case 'b':
       pars->n_boot_rep = atoi(optarg);
