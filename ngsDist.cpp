@@ -52,7 +52,7 @@ int main (int argc, char** argv) {
 	   pars->N_thresh,
 	   pars->call_thresh,
 	   pars->score[1][1],
-	   pars->indpe_geno ? "true":"false",
+	   pars->indep_geno ? "true":"false",
 	   pars->n_boot_rep,
 	   pars->boot_block_size,
 	   pars->out_prefix,
