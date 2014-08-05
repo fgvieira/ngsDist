@@ -76,6 +76,8 @@ int main (int argc, char** argv) {
     error(__FUNCTION__, "Number of sites (-n_sites) missing!");
   if(pars->call_geno && !pars->in_probs)  
     error(__FUNCTION__, "Can only call genotypes from probabilities!");
+  if(pars->n_threads < 1)
+    error(__FUNCTION__, "NUmber of threads cannot be less than 1!");
   
 
   
@@ -92,9 +94,6 @@ int main (int argc, char** argv) {
       printf("==> Fewer combinations (%ld) than threads (%d). Reducing the number of threads...\n", n_comb, pars->n_threads);
     pars->n_threads = n_comb;
   }
-  // If input are genotypes                                                                                                                                                                                                                                                
-  if(!pars->in_probs)
-    pars->in_logscale = true;
 
 
 
@@ -152,6 +151,9 @@ int main (int argc, char** argv) {
   if(pars->verbose >= 1)
     printf("==> Reading genotype data\n");
   pars->in_geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_probs, pars->n_ind, pars->n_sites);
+  // If input are genotypes
+  if(!pars->in_probs)
+    pars->in_logscale = true;
 
   // Initialize geno_lkl pointers
   pars->geno_lkl = new double**[pars->n_ind];
@@ -264,8 +266,7 @@ int main (int argc, char** argv) {
 	else if(ret == -5)
           error(__FUNCTION__, "thread failure!");
 
-	if(pars->verbose >= 6)
-	  printf("> Launched thread for individuals %lu and %lu (comb# %lu).\n", i1, i2, comb_id);
+	//printf("> Launched thread for individuals %lu and %lu (comb# %lu).\n", i1, i2, comb_id);
       }
 
 
@@ -330,6 +331,7 @@ int main (int argc, char** argv) {
 
 
 double gen_dist(params *p, uint64_t i1, uint64_t i2){
+  bool indep_sites = (p->in_probs && !p->call_geno ? false : true);
   uint64_t cnt = 0;
   double dist = 0;
 
@@ -351,11 +353,19 @@ double gen_dist(params *p, uint64_t i1, uint64_t i2){
     GL2.mat[0][1] = p->geno_lkl[i2][s][1];
     GL2.mat[0][2] = p->geno_lkl[i2][s][2];
 
-    em2(sfs, &GL1, &GL2, 0.001, 50, dim);
+    if(!indep_sites)
+      em2(sfs, &GL1, &GL2, 0.001, 50, dim);
 
     for(uint64_t g1 = 0; g1 < N_GENO; g1++)
-      for(uint64_t g2 = 0; g2 < N_GENO; g2++)
-	dist += p->score[g1][g2] * sfs[3*g1+g2];
+      for(uint64_t g2 = 0; g2 < N_GENO; g2++){
+	dist += p->score[g1][g2] * (indep_sites ? p->geno_lkl[i1][s][g1]*p->geno_lkl[i2][s][g2] : sfs[3*g1+g2]);
+
+	if(p->verbose >= 9)
+	  printf("%lu\t%lu <-> %lu\t%lu - %lu\t%f\t%f\n", s, i1, i2, g1, g2, p->geno_lkl[i1][s][g1]*p->geno_lkl[i2][s][g2], sfs[3*g1+g2]);
+      }
+
+    if(p->verbose >= 8)
+      printf("Cumulative distance between indiv %lu and %lu at site %lu: %f\n", i1, i2, s, dist);
 
     cnt++;
     free_ptr(sfs);

@@ -24,8 +24,8 @@ $ANGSD/angsd -glf $SIM_DATA/testA.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_
 # Binary, log-scale
 $ANGSD/angsd -glf $SIM_DATA/testA.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_IND -doMajorMinor 1 -doPost 1 -doMaf -1 -doGeno 32 -out testA_32
 gunzip testA_32.geno.gz
-../ngsDist -n_threads 10 -seed 12345 -verbose 0 -geno testA_32.geno -probs -log_scale -n_ind $N_IND -n_sites $N_SITES -labels testA.labels -n_boot_rep 5                     -out_prefix testA_32
-../ngsDist -n_threads 10 -seed 12345 -verbose 0 -geno testA_32.geno -probs -log_scale -n_ind $N_IND -n_sites $N_SITES -labels testA.labels -n_boot_rep 5 -boot_block_size 10 -out_prefix testA_32-10
+../ngsDist -n_threads 10 -seed 12345 -verbose 0 -geno testA_32.geno -probs -n_ind $N_IND -n_sites $N_SITES -labels testA.labels -n_boot_rep 5                     -out_prefix testA_32
+../ngsDist -n_threads 10 -seed 12345 -verbose 0 -geno testA_32.geno -probs -n_ind $N_IND -n_sites $N_SITES -labels testA.labels -n_boot_rep 5 -boot_block_size 10 -out_prefix testA_32-10
 
 # Text, normal scale
 $ANGSD/angsd -glf $SIM_DATA/testA.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_IND -doMajorMinor 1 -doPost 1 -doMaf -1 -doGeno 8 -out testA_8
