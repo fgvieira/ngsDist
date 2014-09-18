@@ -39,47 +39,6 @@ int main (int argc, char** argv) {
     exit(0);
   }
 
-  if(pars->verbose >= 1) {
-    printf("==> Input Arguments:\n");
-    printf("\tgeno: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tlabels: %s\n\tprobs: %s\n\tlog_scale: %s\n\tcall_geno: %s\n\tN_thresh: %f\n\tcall_thresh: %f\n\thet_dist: %f\n\tgeno_indep: %s\n\tn_boot_rep: %lu\n\tboot_block_size: %lu\n\tout_prefix: %s\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
-	   pars->in_geno,
-	   pars->n_ind,
-           pars->n_sites,
-	   pars->in_labels,
-	   pars->in_probs ? "true":"false",
-	   pars->in_logscale ? "true":"false",
-	   pars->call_geno ? "true":"false",
-	   pars->N_thresh,
-	   pars->call_thresh,
-	   pars->score[1][1],
-	   pars->indep_geno ? "true":"false",
-	   pars->n_boot_rep,
-	   pars->boot_block_size,
-	   pars->out_prefix,
-	   pars->n_threads,
-	   pars->version ? "true":"false",
-	   pars->verbose,
-	   pars->seed);
-  }
-  if(pars->verbose > 4)
-    printf("==> Verbose values greater than 4 for debugging purpose only. Expect large amounts of info on screen\n");
-
-
-
-  /////////////////////
-  // Check Arguments //
-  /////////////////////
-  if(pars->in_geno == NULL)
-    error(__FUNCTION__, "Genotype input file (-geno) missing!");
-  if(pars->n_ind == 0)
-    error(__FUNCTION__, "Number of individuals (-n_ind) missing!");
-  if(pars->n_sites == 0)
-    error(__FUNCTION__, "Number of sites (-n_sites) missing!");
-  if(pars->call_geno && !pars->in_probs)  
-    error(__FUNCTION__, "Can only call genotypes from probabilities!");
-  if(pars->n_threads < 1)
-    error(__FUNCTION__, "NUmber of threads cannot be less than 1!");
-  
 
   
   ///////////////////////
@@ -105,19 +64,26 @@ int main (int argc, char** argv) {
   // Check input files //
   ///////////////////////
   // Get file total size
-  struct stat st;
-  if( stat(pars->in_geno, &st) != 0 )
-    error(__FUNCTION__, "cannot check file size!");
-  if( strcmp(strrchr(pars->in_geno, '.'), ".gz") == 0 ){
+  if( strcmp(pars->in_geno, "-") == 0 ){
     if(pars->verbose >= 1)
-      printf("==> GZIP input file (never BINARY)\n");
-    pars->in_bin = false;
-  }else if( pars->n_sites == st.st_size/sizeof(double)/pars->n_ind/N_GENO ){
-    if(pars->verbose >= 1)
-      printf("==> BINARY input file\n");
+      printf("==> Reading from STDIN (BINARY)\n");
     pars->in_bin = true;
-  }else
-    error(__FUNCTION__, "invalid/corrupt genotype input file!");
+  }else{
+    struct stat st;
+    if( stat(pars->in_geno, &st) != 0 )
+      error(__FUNCTION__, "cannot check file size!");
+
+    if( strcmp(strrchr(pars->in_geno, '.'), ".gz") == 0 ){
+      if(pars->verbose >= 1)
+	printf("==> GZIP input file (never BINARY)\n");
+      pars->in_bin = false;
+    }else if( pars->n_sites == st.st_size/sizeof(double)/pars->n_ind/N_GENO ){
+      if(pars->verbose >= 1)
+	printf("==> BINARY input file\n");
+      pars->in_bin = true;
+    }else
+      error(__FUNCTION__, "invalid/corrupt genotype input file!");
+  }
   
 
 
@@ -374,7 +340,7 @@ double gen_dist(params *p, uint64_t i1, uint64_t i2){
     free_ptr(sfs);
   }
 
-  if(p->verbose >=5)
+  if(p->verbose >=3)
     printf("\tFound %lu sites valid between Ind %lu and Ind %lu!\n", cnt, i1, i2);
 
   dalloc(GL1, 1);
