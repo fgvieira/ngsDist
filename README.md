@@ -44,7 +44,7 @@ Executables are built into the main directory. If you wish to clean all binaries
 * `-seed INT`: Random number generator seed.
 
 ### Input data
-As input `ngsDist` needs a Genotype Likelihood (GL) file, formatted as 3*n_ind*n_sites, either in text (gziped) of binary doubles.
+As input `ngsDist` needs a Genotype Likelihood (GL) file, formatted as 3*n_ind*n_sites, either as gziped TSV or binary doubles.
 
 ### Thread pool
 The thread pool	implementation was adapted from Mathias Brossard's and is freely available from:

@@ -345,7 +345,8 @@ double gen_dist(params *p, uint64_t i1, uint64_t i2){
 
   dalloc(GL1, 1);
   dalloc(GL2, 1);
-  return dist/cnt;
+  // Logarithmic transformation (log(1-d)) to make distance additive (assuming constant Ne) and avoid violating minimum evolution and NJ assumptions.
+  return -log(1-dist/cnt);
 }
 
 
