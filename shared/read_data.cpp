@@ -43,6 +43,7 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
       // Check if header and skip
       if(!n_fields){
 	s--;
+	printf("> Header found! Skipping line...\n");
 	continue;
       }
 
@@ -63,7 +64,8 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
 	    if(g > 2)
 	      error(__FUNCTION__, "wrong GENO format!");
 	    geno[i][s][g] = log(1);
-	  }
+	  }else
+	    geno[i][s][0] = geno[i][s][1] = geno[i][s][2] = log((double) 1/N_GENO);
         }
 
       delete [] t;
@@ -111,13 +113,18 @@ double* read_pos(char *in_pos, uint64_t n_sites){
     // Check if header and skip
     if(!n_fields){
       s--;
+      printf("> Header found! Skipping line...\n");
       continue;
     }
 
     if(n_fields < 2)
       error(__FUNCTION__, "wrong POS file format!");
 
-    if(strcmp(prev_chr, t[0]) == 0 || strlen(prev_chr) == 0)
+    // If first chr to be parsed
+    if(strlen(prev_chr) == 0)
+      strcpy(prev_chr, t[0]);
+    
+    if(strcmp(prev_chr, t[0]) == 0)
       pos_dist[s] = strtod(t[1], NULL) - prev_pos;
     else {
       pos_dist[s] = INFINITY;
