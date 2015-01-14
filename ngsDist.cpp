@@ -310,8 +310,8 @@ double gen_dist(params *p, uint64_t i1, uint64_t i2){
 
   for(uint64_t s = 1; s <= p->n_sites; s++){
     // Skip missing data
-    if(p->geno_lkl[i1][s][0] + p->geno_lkl[i1][s][1] + p->geno_lkl[i1][s][2] < EPSILON ||
-       p->geno_lkl[i2][s][0] + p->geno_lkl[i2][s][1] + p->geno_lkl[i2][s][2] < EPSILON)
+    if(miss_data(p->geno_lkl[i1][s]) || 
+       miss_data(p->geno_lkl[i2][s]))
       continue;
 
     double* sfs = init_ptr(dim, (double) 1/dim);

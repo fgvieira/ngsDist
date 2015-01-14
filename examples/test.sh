@@ -16,7 +16,7 @@ cat $SIM_DATA/testA.geno | perl -s -p -e 's/0 0/0/g; s/(\w) \1/2/g; s/\w \w/1/g;
 ../ngsDist -n_threads 10 -seed 12345 -verbose 0 -geno testA_T.geno.gz -n_ind $N_IND -n_sites $N_SITES -labels testA.labels -n_boot_rep 5 -boot_block_size 10 -out_prefix testA_T-10
 
 ##### Genotypes
-$ANGSD/angsd -glf $SIM_DATA/testA.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_IND -doMajorMinor 1 -doPost 1 -doMaf -1 -doGeno 2 -out testA_2
+$ANGSD/angsd -glf $SIM_DATA/testA.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_IND -doMajorMinor 1 -doPost 1 -doMaf -1 -doGeno 2 -postCutoff 0.95 -out testA_2
 ../ngsDist -n_threads 10 -seed 12345 -verbose 0 -geno testA_2.geno.gz -n_ind $N_IND -n_sites $N_SITES -labels testA.labels -n_boot_rep 5                     -out_prefix testA_2
 ../ngsDist -n_threads 10 -seed 12345 -verbose 0 -geno testA_2.geno.gz -n_ind $N_IND -n_sites $N_SITES -labels testA.labels -n_boot_rep 5 -boot_block_size 10 -out_prefix testA_2-10
 
