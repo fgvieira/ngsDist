@@ -58,6 +58,10 @@ int main (int argc, char** argv) {
   if(pars->call_geno || !pars->in_probs)
     pars->indep_geno = true;
 
+  if(pars->indep_geno)
+    if(pars->verbose >= 1)
+      printf("==> Using faster algorithm (assuming independence of genotypes)!\n");
+
 
 
   ///////////////////////
