@@ -2,6 +2,13 @@
 
 `ngsDist` is a program to estimate pairwise genetic distances directly, taking the uncertainty of genotype's assignation into account. It does so by avoiding genotype calling and using genotype likelihoods or posterior probabilities.
 
+### Citation
+
+`ngsDist` was published in 2015 at [Biological Journal of the Linnean Society](http://onlinelibrary.wiley.com/doi/10.1111/bij.12511/abstract), so please cite it if you use it in your work:
+
+    Vieira FG, Lassalle F, Korneliussen TS, Fumagalli M
+    Improving the estimation of genetic distances from Next-Generation Sequencing data
+    Biological Journal of the Linnean Society (2015) doi: 10.1111/bij.12511
 
 ### Installation
 
