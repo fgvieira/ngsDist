@@ -28,4 +28,4 @@ test:
 	@cd examples/; bash test.sh 2> test.log; cd ../
 
 clean:
-	@rm -f *~ *.o ngsDist examples/testA_*
+	@rm -f *~ *.o ngsDist examples/testA_* examples/test.log
