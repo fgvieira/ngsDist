@@ -261,7 +261,7 @@ int main (int argc, char** argv) {
     if(pars->verbose >= 2)
       printf("> Printing distance matrix\n");
 
-    fprintf(out_fh, "\n  %lu\n", pars->n_ind);
+    fprintf(out_fh, "\n%lu\n", pars->n_ind);
     for(uint64_t i = 0; i < pars->n_ind; i++){
       char* buf = join(dist_matrix[i], pars->n_ind, "\t");
       fprintf(out_fh, "%s\t%s\n", pars->ind_labels[i], buf);
