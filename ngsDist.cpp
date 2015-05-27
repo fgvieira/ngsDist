@@ -144,7 +144,7 @@ int main (int argc, char** argv) {
 
       // Call genotypes
       if(pars->call_geno)
-	call_geno(pars->in_geno_lkl[i][s], N_GENO, pars->N_thresh, pars->call_thresh, pars->in_logscale);
+	call_geno(pars->in_geno_lkl[i][s], N_GENO, pars->in_logscale, pars->N_thresh, pars->call_thresh, 0);
 
       // Convert space
       if(pars->in_logscale)
