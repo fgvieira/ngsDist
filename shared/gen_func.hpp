@@ -14,6 +14,7 @@
 
 const double INF = 1e15;
 const double EPSILON = 1e-5;
+const uint64_t BUFF_LEN = 100000;
 
 // General definitions
 #define abs(x) ((x) >= 0 ? (x) : -(x))
@@ -46,7 +47,7 @@ double logsum2(double, double);
 double logsum3(double, double, double);
 void chomp(char*);
 gzFile open_gzfile(const char*, const char*, uint64_t = 10000);
-int64_t read_file(const char*, char***, uint64_t);
+uint64_t read_file(const char*, char***, uint64_t = BUFF_LEN);
 
 uint64_t split(char*, const char*, int**);
 uint64_t split(char*, const char*, float**);

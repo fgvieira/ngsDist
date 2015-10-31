@@ -32,7 +32,7 @@ int main (int argc, char** argv) {
   /////////////////////
   params* pars = new params;
   init_pars(pars);
-  parse_cmd_args(argc, argv, pars);
+  parse_cmd_args(pars, argc, argv);
 
   if( pars->version ) {
     printf("ngsDist v%s\nCompiled on %s @ %s", version, __DATE__, __TIME__);
@@ -124,24 +124,17 @@ int main (int argc, char** argv) {
   // Read from GENO file
   if(pars->verbose >= 1)
     printf("==> Reading genotype data\n");
-  pars->in_geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_probs, pars->n_ind, pars->n_sites);
-  // If input are genotypes
-  if(!pars->in_probs)
-    pars->in_logscale = true;
+  pars->in_geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_probs, pars->in_logscale, pars->n_ind, pars->n_sites);
+  // Read_geno always returns genos in logscale
+  pars->in_logscale = true;
 
-  // Initialize geno_lkl pointers
-  pars->geno_lkl = new double**[pars->n_ind];
-  for(uint64_t i = 0; i < pars->n_ind; i++){
-    pars->geno_lkl[i] = new double*[pars->n_sites+1];
+  // Make copy of GLs in case of bootstrap
+  pars->geno_lkl = init_ptr(pars->n_ind, pars->n_sites+1, N_GENO, -INF);
+  for(uint64_t i = 0; i < pars->n_ind; i++)
     memcpy(pars->geno_lkl[i], pars->in_geno_lkl[i], (pars->n_sites+1)*sizeof(double*));
-  }
 
   for(uint64_t i = 0; i < pars->n_ind; i++)
     for(uint64_t s = 1; s <= pars->n_sites; s++){
-      // Normalize GL
-      if(pars->in_logscale)
-	post_prob(pars->in_geno_lkl[i][s], pars->in_geno_lkl[i][s], NULL, N_GENO);
-
       // Call genotypes
       if(pars->call_geno)
 	call_geno(pars->in_geno_lkl[i][s], N_GENO, pars->in_logscale, pars->N_thresh, pars->call_thresh, 0);
@@ -162,7 +155,7 @@ int main (int argc, char** argv) {
   //////////////////////
   // Open output file //
   //////////////////////
-  FILE* out_fh = fopen(strcat(pars->out_prefix, ".dist"), "w");
+  FILE* out_fh = fopen(pars->out, "w");
   if(out_fh == NULL)
     error(__FUNCTION__, "cannot open output file!");
  
@@ -182,8 +175,7 @@ int main (int argc, char** argv) {
   }
 
   // Create threadpool
-  threadpool_t *thread_pool;
-  if( (thread_pool = threadpool_create(pars->n_threads, n_comb, 0)) == NULL )
+  if( (pars->thread_pool = threadpool_create(pars->n_threads, n_comb, 0)) == NULL )
     error(__FUNCTION__, "failed to create thread pool!");
 
 
@@ -192,7 +184,6 @@ int main (int argc, char** argv) {
   // Analyze Data //
   //////////////////
   fflush(stdout);
-
   // Loop for bootstrap analyses
   for(uint64_t rep = 0; rep <= pars->n_boot_rep; rep++){
     comb_id = 0;
@@ -228,7 +219,7 @@ int main (int argc, char** argv) {
 	pth[comb_id].i2 = i2;
 
 	// Add task to thread pool
-	int ret = threadpool_add(thread_pool, gen_dist_slave, (void*) &pth[comb_id++], 0);
+	int ret = threadpool_add(pars->thread_pool, gen_dist_slave, (void*) &pth[comb_id++], 0);
 	if(ret == -1)
           error(__FUNCTION__, "invalid thread pool!");
 	else if(ret == -2)
@@ -239,8 +230,6 @@ int main (int argc, char** argv) {
           error(__FUNCTION__, "thread pool is shutting down!");
 	else if(ret == -5)
           error(__FUNCTION__, "thread failure!");
-
-	//printf("> Launched thread for individuals %lu and %lu (comb# %lu).\n", i1, i2, comb_id);
       }
 
 
@@ -248,7 +237,7 @@ int main (int argc, char** argv) {
     //////////////////////////
     // Wait for all threads //
     //////////////////////////
-    threadpool_wait(thread_pool, 0.1);
+    threadpool_wait(pars->thread_pool, 0.1);
 
     if(n_comb != comb_id)
       error(__FUNCTION__, "some combinations are missing!");
@@ -270,8 +259,8 @@ int main (int argc, char** argv) {
 
   }
 
-  threadpool_wait(thread_pool, 0.1);
-  if(threadpool_destroy(thread_pool, threadpool_graceful) != 0)
+  threadpool_wait(pars->thread_pool, 0.1);
+  if(threadpool_destroy(pars->thread_pool, threadpool_graceful) != 0)
     error(__FUNCTION__, "cannot free thread pool!");
 
   fclose(out_fh);

@@ -262,7 +262,7 @@ gzFile open_gzfile(const char* name, const char* mode, uint64_t buf_size){
 
 
 // Read data from file and place into array
-int64_t read_file(const char *in_file, char ***ptr, uint64_t buff_size){
+uint64_t read_file(const char *in_file, char ***ptr, uint64_t buff_size){
   uint64_t cnt = 0;
   char buf[buff_size];
   char **tmp = NULL;
