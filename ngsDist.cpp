@@ -129,7 +129,7 @@ int main (int argc, char** argv) {
   pars->in_logscale = true;
 
   // Make copy of GLs in case of bootstrap
-  pars->geno_lkl = init_ptr(pars->n_ind, pars->n_sites+1, N_GENO, -INF);
+  pars->geno_lkl = init_ptr(pars->n_ind, pars->n_sites+1, 0, -INF);
   for(uint64_t i = 0; i < pars->n_ind; i++)
     memcpy(pars->geno_lkl[i], pars->in_geno_lkl[i], (pars->n_sites+1)*sizeof(double*));
 

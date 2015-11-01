@@ -39,8 +39,8 @@ $ANGSD/angsd -glf $SIM_DATA/testA.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_
 
 
 ##### Check MD5
-rm -f *.arg *.gz
-md5sum testA_* | sort -k 2,2 > /tmp/test.md5
+rm -f *.arg
+md5sum testA_* | fgrep -v '.gz' | sort -k 2,2 > /tmp/test.md5
 if diff /tmp/test.md5 test.md5 > /dev/null
 then
     echo "ngsDist: All tests OK!"
