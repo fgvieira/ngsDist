@@ -35,7 +35,7 @@ int main (int argc, char** argv) {
   parse_cmd_args(pars, argc, argv);
 
   if( pars->version ) {
-    printf("ngsDist v%s\nCompiled on %s @ %s", version, __DATE__, __TIME__);
+    fprintf(stderr, "ngsDist v%s\nCompiled on %s @ %s", version, __DATE__, __TIME__);
     exit(0);
   }
 
@@ -47,11 +47,11 @@ int main (int argc, char** argv) {
   // Calculate total number of combinations
   uint64_t n_comb = (pow(pars->n_ind, 2) - pars->n_ind) / 2;
   if(pars->verbose >= 1)
-    printf("==> Analysis will be run in %lu combinations\n", n_comb);
+    fprintf(stderr, "==> Analysis will be run in %lu combinations\n", n_comb);
   // Adjust thread number to combinations
   if(n_comb < pars->n_threads){
     if(pars->verbose >= 1)
-      printf("==> Fewer combinations (%ld) than threads (%d). Reducing the number of threads...\n", n_comb, pars->n_threads);
+      fprintf(stderr, "==> Fewer combinations (%ld) than threads (%d). Reducing the number of threads...\n", n_comb, pars->n_threads);
     pars->n_threads = n_comb;
   }
   // If input are genotypes (either called ot not) assume independence between genotypes (faster)
@@ -60,7 +60,7 @@ int main (int argc, char** argv) {
 
   if(pars->indep_geno)
     if(pars->verbose >= 1)
-      printf("==> Using faster algorithm (assuming independence of genotypes)!\n");
+      fprintf(stderr, "==> Using faster algorithm (assuming independence of genotypes)!\n");
 
 
 
@@ -70,7 +70,7 @@ int main (int argc, char** argv) {
   // Get file total size
   if( strcmp(pars->in_geno, "-") == 0 ){
     if(pars->verbose >= 1)
-      printf("==> Reading from STDIN (BINARY)\n");
+      fprintf(stderr, "==> Reading from STDIN (BINARY)\n");
     pars->in_bin = true;
   }else{
     struct stat st;
@@ -79,11 +79,11 @@ int main (int argc, char** argv) {
 
     if( strcmp(strrchr(pars->in_geno, '.'), ".gz") == 0 ){
       if(pars->verbose >= 1)
-	printf("==> GZIP input file (never BINARY)\n");
+	fprintf(stderr, "==> GZIP input file (never BINARY)\n");
       pars->in_bin = false;
     }else if( pars->n_sites == st.st_size/sizeof(double)/pars->n_ind/N_GENO ){
       if(pars->verbose >= 1)
-	printf("==> BINARY input file\n");
+	fprintf(stderr, "==> BINARY input file\n");
       pars->in_bin = true;
     }else
       error(__FUNCTION__, "invalid/corrupt genotype input file!");
@@ -97,11 +97,11 @@ int main (int argc, char** argv) {
   // Read labels file
   if(pars->in_labels){
     if(pars->verbose >= 1)
-      printf("==> Reading labels\n");
+      fprintf(stderr, "==> Reading labels\n");
 
     int64_t ret = read_file(pars->in_labels, &pars->ind_labels, 1000);
     if(pars->verbose >= 1)
-      printf("> Found %ld labels in file\n", ret);
+      fprintf(stderr, "> Found %ld labels in file\n", ret);
 
     if(ret == -1)
       error(__FUNCTION__, "cannot open labels file!");
@@ -119,11 +119,11 @@ int main (int argc, char** argv) {
   
   if(pars->verbose >= 4)
     for(uint64_t i = 0; i < pars->n_ind; i++)
-      printf("%s\n", pars->ind_labels[i]);
+      fprintf(stderr, "%s\n", pars->ind_labels[i]);
 
   // Read from GENO file
   if(pars->verbose >= 1)
-    printf("==> Reading genotype data\n");
+    fprintf(stderr, "==> Reading genotype data\n");
   pars->in_geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_probs, pars->in_logscale, pars->n_ind, pars->n_sites);
   // Read_geno always returns genos in logscale
   pars->in_logscale = true;
@@ -146,7 +146,7 @@ int main (int argc, char** argv) {
 
   // Initialize random number generator
   if(pars->verbose >= 2)
-    printf("==> Setting seed for random number generator\n");
+    fprintf(stderr, "==> Setting seed for random number generator\n");
   pars->rnd_gen = gsl_rng_alloc(gsl_rng_taus);
   gsl_rng_set(pars->rnd_gen, pars->seed);
 
@@ -191,16 +191,16 @@ int main (int argc, char** argv) {
     if(pars->verbose >= 1){
       if(rep == 0)
 	// Full dataset analyses
-	printf("==> Analyzing full dataset...\n");
+	fprintf(stderr, "==> Analyzing full dataset...\n");
       else
 	// Bootstrap analyses
-	printf("==> Bootstrap replicate # %lu ...\n", rep);
+	fprintf(stderr, "==> Bootstrap replicate # %lu ...\n", rep);
     }
 
 
     // Map from in_geno_lkl data to geno_lkl
     if(pars->verbose >= 2)
-      printf("> Mapping positions...\n");
+      fprintf(stderr, "> Mapping positions...\n");
 
     // If not rep 0, then adjust number of sites and random sample blocks from original dataset
     if(rep > 0){
@@ -210,7 +210,7 @@ int main (int argc, char** argv) {
 
     // Calculate pairwise genetic distances
     if(pars->verbose >= 2)
-      printf("> Calculating pairwise genetic distances...\n");
+      fprintf(stderr, "> Calculating pairwise genetic distances...\n");
 
     for(uint64_t i1 = 0; i1 < pars->n_ind; i1++)
       for(uint64_t i2 = i1+1; i2 < pars->n_ind; i2++){
@@ -248,7 +248,7 @@ int main (int argc, char** argv) {
     // Print Distance Matrix //
     ///////////////////////////
     if(pars->verbose >= 2)
-      printf("> Printing distance matrix\n");
+      fprintf(stderr, "> Printing distance matrix\n");
 
     fprintf(out_fh, "\n%lu\n", pars->n_ind);
     for(uint64_t i = 0; i < pars->n_ind; i++){
@@ -271,7 +271,7 @@ int main (int argc, char** argv) {
   // Free Memory //
   /////////////////
   if(pars->verbose >= 1)
-    printf("====> Freeing memory...\n");
+    fprintf(stderr, "==> Freeing memory...\n");
 
   free_ptr((void**) dist_matrix, pars->n_ind);
   delete [] pth;
@@ -283,7 +283,7 @@ int main (int argc, char** argv) {
   gsl_rng_free(pars->rnd_gen);
 
   if(pars->verbose >= 1)
-    printf("Done!\n");
+    fprintf(stderr, "Done!\n");
 
   delete pars;
 
@@ -323,18 +323,18 @@ double gen_dist(params *p, uint64_t i1, uint64_t i2){
 	dist += p->score[g1][g2] * (p->indep_geno ? p->geno_lkl[i1][s][g1]*p->geno_lkl[i2][s][g2] : sfs[3*g1+g2]);
 
 	if(p->verbose >= 9)
-	  printf("%lu\t%lu <-> %lu\t%lu - %lu\t%f\t%f\n", s, i1, i2, g1, g2, p->geno_lkl[i1][s][g1]*p->geno_lkl[i2][s][g2], sfs[3*g1+g2]);
+	  fprintf(stderr, "%lu\t%lu <-> %lu\t%lu - %lu\t%f\t%f\n", s, i1, i2, g1, g2, p->geno_lkl[i1][s][g1]*p->geno_lkl[i2][s][g2], sfs[3*g1+g2]);
       }
 
     if(p->verbose >= 8)
-      printf("Cumulative distance between indiv %lu and %lu at site %lu: %f\n", i1, i2, s, dist);
+      fprintf(stderr, "Cumulative distance between indiv %lu and %lu at site %lu: %f\n", i1, i2, s, dist);
 
     cnt++;
     free_ptr(sfs);
   }
 
   if(p->verbose >=3)
-    printf("\tFound %lu sites valid between Ind %lu and Ind %lu!\n", cnt, i1, i2);
+    fprintf(stderr, "\tFound %lu sites valid between Ind %lu and Ind %lu!\n", cnt, i1, i2);
 
   dalloc(GL1, 1);
   dalloc(GL2, 1);
@@ -364,7 +364,7 @@ void rnd_map_data(params *pars, uint64_t n_blocks){
       rnd_block_s = rnd_block * pars->boot_block_size + s;
 
       if(pars->verbose >= 5)
-	printf("block: %lu\torig_site: %lu\trand_block:%lu\trand_site: %lu\n", block, block_s, rnd_block, rnd_block_s);
+	fprintf(stderr, "block: %lu\torig_site: %lu\trand_block:%lu\trand_site: %lu\n", block, block_s, rnd_block, rnd_block_s);
 
       for(uint64_t i = 0; i < pars->n_ind; i++)
 	pars->geno_lkl[i][block_s] = pars->in_geno_lkl[i][rnd_block_s];
