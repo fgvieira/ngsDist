@@ -23,7 +23,7 @@ $ANGSD/angsd -glf $SIM_DATA/testA.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_
 ##### Genotypes' likelihood and posterior probabilities
 # Binary, log-scale
 $ANGSD/angsd -glf $SIM_DATA/testA.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_IND -doMajorMinor 1 -doPost 1 -doMaf 1 -doGeno 32 -out testA_32
-gunzip testA_32.geno.gz
+gunzip -f testA_32.geno.gz
 ../ngsDist --n_threads 10 --seed 12345 --verbose 0 --geno testA_32.geno --probs --n_ind $N_IND --n_sites $N_SITES --labels testA.labels --n_boot_rep 5                                                                   --out testA_32.dist
 ../ngsDist --n_threads 10 --seed 12345 --verbose 0 --geno testA_32.geno --probs --n_ind $N_IND --n_sites $N_SITES --labels testA.labels --n_boot_rep 5 --boot_block_size 10                                              --out testA_32-10.dist
 ../ngsDist --n_threads 10 --seed 12345 --verbose 0 --geno testA_32.geno --probs --n_ind $N_IND --n_sites $N_SITES --labels testA.labels --n_boot_rep 5 --boot_block_size 10 --call_geno                                  --out testA_32-10CG.dist

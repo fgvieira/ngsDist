@@ -99,6 +99,21 @@ int array_min_pos(double *array, int size) {
 }
 
 
+// Transpose matrix
+void transp_matrix(void *src, void *dest, uint64_t A, uint64_t B){
+  if(A < 1 || B < 1)
+    error(__FUNCTION__, "invalid size of array!");
+
+  double** s = (double**) src;
+  double** d = (double**) dest;
+  
+  for(uint64_t a = 0; a < A; a++)
+    for(uint64_t b = 0; b < B; b++)
+      d[b][a] = s[a][b];
+}
+
+
+
 double draw_rnd(gsl_rng *r, uint64_t min, uint64_t max) {
   return( min + gsl_rng_uniform(r) * (max - min) );
 }
