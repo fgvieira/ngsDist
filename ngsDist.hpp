@@ -4,7 +4,7 @@
 #include "threadpool.h"
 
 extern bool SIG_COND;
-
+extern char const* version;
 
 
 // Struct to store all input arguments //GZIP

@@ -67,6 +67,7 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
       break;
     case 'l':
       pars->in_logscale = true;
+      pars->in_probs = true;
       break;
     case 'n':
       pars->n_ind = atoi(optarg);
@@ -150,6 +151,10 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
   /////////////////////
   // Check Arguments //
   /////////////////////
+  if(pars->version) {
+    fprintf(stderr, "ngsDist v%s\nCompiled on %s @ %s\n", version, __DATE__, __TIME__);
+    exit(0);
+  }
   if(pars->in_geno == NULL)
     error(__FUNCTION__, "genotype input file (--geno) missing!");
   if(pars->n_ind == 0)
