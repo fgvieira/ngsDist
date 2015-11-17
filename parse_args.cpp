@@ -14,7 +14,7 @@ void init_pars(params *pars) {
   pars->call_geno = false;
   pars->N_thresh = 0;
   pars->call_thresh = 0;
-  // Distance score matrix based on Eq 8.1 from Gronau et al 2011 and Del Vecchyo et al. 2014
+  // Distance score matrix based on Eq 12 from Gronau et al 2011 and Eq 8.1 from Del Vecchyo et al. 2014
   pars->score[0][0] = pars->score[1][1] = pars->score[2][2] = 0; 
   pars->score[0][1] = pars->score[1][0] = pars->score[1][2] = pars->score[2][1] = 0.5; 
   pars->score[0][2] = pars->score[2][0] = 1; 

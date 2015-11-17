@@ -95,13 +95,26 @@ int main (int argc, char** argv) {
       fprintf(stderr, "==> Reading labels\n");
 
     int64_t ret = read_file(pars->in_labels, &pars->ind_labels, 1000);
-    if(pars->verbose >= 1)
-      fprintf(stderr, "> Found %ld labels in file\n", ret);
-
     if(ret == -1)
       error(__FUNCTION__, "cannot open labels file!");
-    else if(ret != (int64_t) pars->n_ind)
+
+    if(ret == (int64_t) pars->n_ind +1){
+      fprintf(stderr, "> Assuming label file has a header\n");
+      ret--;
+      pars->ind_labels++;
+    }
+    if(pars->verbose >= 1)
+      fprintf(stderr, "> Found %ld labels in file\n", ret);
+    if(ret != (int64_t) pars->n_ind)
       error(__FUNCTION__, "wrong number of labels provided!");
+
+    // Fix labels...
+    char* ptr;
+    for(int64_t i = 0; i < ret; i++){
+      ptr = strchr(pars->ind_labels[i], '\t');
+      if(ptr != NULL)
+	*ptr = '\0';
+    }
   }else{
     pars->ind_labels = init_ptr(pars->n_ind, BUFF_LEN, (const char*) "Ind_#");
     // Tweak initiation value (replace # by number)
