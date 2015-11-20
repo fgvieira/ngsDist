@@ -101,7 +101,11 @@ int main (int argc, char** argv) {
     if(ret == (int64_t) pars->n_ind +1){
       fprintf(stderr, "> Assuming label file has a header\n");
       ret--;
-      pars->ind_labels++;
+      char **tmp = pars->ind_labels;
+      pars->ind_labels = init_ptr(ret, 0, (const char*) '\0');
+      memcpy(pars->ind_labels, tmp+1, ret*sizeof(char*));
+      free_ptr((void*) *tmp); // Free first line (the header)
+      free_ptr((void**) tmp); // Free remaining pointers
     }
     if(pars->verbose >= 1)
       fprintf(stderr, "> Found %ld labels in file\n", ret);
