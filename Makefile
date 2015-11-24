@@ -1,9 +1,9 @@
 CC=gcc
 CXX=g++
 
-#CFLAGS = -g -Wall -I./shared
-CFLAGS = -O3 -Wall -I./shared
-DFLAGS = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
+CFLAGS = -I./shared
+#DFLAGS = -g -Wall -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
+DFLAGS = -O3 -Wall -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
 LIB = -lgsl -lgslcblas -lz -lpthread
 
 SHARED_LIB = gen_func.cpp read_data.cpp threadpool.c

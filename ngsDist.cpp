@@ -368,9 +368,12 @@ void rnd_map_data(params *pars, uint64_t n_blocks){
   uint64_t block, rnd_block;
   uint64_t block_s, rnd_block_s;
 
+  // For each of the original blocks
   for(block = 0; block < n_blocks; block++){
+    // Pick a random one to replace it
     rnd_block = (uint64_t) floor( draw_rnd(pars->rnd_gen, 0, n_blocks) );
 
+    // And copy its content
     for(uint64_t s = 1; s <= pars->boot_block_size; s++){
       block_s = block * pars->boot_block_size + s;
       rnd_block_s = rnd_block * pars->boot_block_size + s;
