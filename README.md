@@ -46,6 +46,7 @@ Executables are built into the main directory. If you wish to clean all binaries
 * `--call_geno`: call genotypes before running analyses.
 * `--N_thresh DOUBLE`: minimum threshold to consider site; missing data if otherwise (assumes -call_geno) 
 * `--call_thresh DOUBLE`: minimum threshold to call genotype; left as is if otherwise (assumes -call_geno)
+* `--pairwise_del`: pairwise deletion of missing data.
 * `--het_dist`: use alternative heterozygote distance [0].
 * `--indep_geno`: assume independence between genotypes?
 * `--n_boot_rep INT`: number of bootstrap replicates [0].

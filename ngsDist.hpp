@@ -7,7 +7,7 @@ extern bool SIG_COND;
 extern char const* version;
 
 
-// Struct to store all input arguments //GZIP
+// Struct to store all input arguments
 typedef struct {
   char *in_geno;
   bool in_bin;
@@ -19,6 +19,7 @@ typedef struct {
   bool call_geno;
   double N_thresh;
   double call_thresh;
+  bool pairwise_del;
   double score[N_GENO][N_GENO];
   bool indep_geno;
   uint64_t n_boot_rep;

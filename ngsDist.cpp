@@ -154,7 +154,7 @@ int main (int argc, char** argv) {
       if(pars->call_geno)
 	call_geno(pars->in_geno_lkl[i][s], N_GENO, pars->in_logscale, pars->N_thresh, pars->call_thresh, 0);
 
-      // Convert space
+      // Convert space - from now on, all in NORMAL space!
       if(pars->in_logscale)
 	conv_space(pars->in_geno_lkl[i][s], N_GENO, exp);
     }
@@ -318,8 +318,9 @@ double gen_dist(params *p, uint64_t i1, uint64_t i2){
 
   for(uint64_t s = 1; s <= p->n_sites; s++){
     // Skip missing data
-    if(miss_data(p->geno_lkl[i1][s]) || 
-       miss_data(p->geno_lkl[i2][s]))
+    if( p->pairwise_del && 
+	(miss_data(p->geno_lkl[i1][s]) ||
+	 miss_data(p->geno_lkl[i2][s])) )
       continue;
 
     double* sfs = init_ptr(dim, (double) 1/dim);
@@ -353,8 +354,13 @@ double gen_dist(params *p, uint64_t i1, uint64_t i2){
 
   dalloc(GL1, 1);
   dalloc(GL2, 1);
+
+  // Calculates raw distance
+  dist /= cnt;
   // Logarithmic transformation (log(1-d)) to make distance additive (assuming constant Ne) and avoid violating minimum evolution and NJ assumptions.
-  return -log(1-dist/cnt);
+  dist = -log(1-dist);
+
+  return dist;
 }
 
 
