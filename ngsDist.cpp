@@ -22,7 +22,7 @@
 #include "ngsDist.hpp"
 #include "emOptim2.cpp"
 
-char const* version = "1.0.0";
+char const* version = "1.0.2";
 
 void rnd_map_data(params *pars, uint64_t n_blocks);
 
@@ -354,6 +354,9 @@ double gen_dist(params *p, uint64_t i1, uint64_t i2){
 
   dalloc(GL1, 1);
   dalloc(GL2, 1);
+
+  if(p->tot_sites > 0)
+    cnt = p->tot_sites;
 
   // Calculates raw distance
   dist /= cnt;

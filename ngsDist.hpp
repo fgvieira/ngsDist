@@ -15,6 +15,7 @@ typedef struct {
   bool in_logscale;
   uint64_t n_ind;
   uint64_t n_sites;
+  uint64_t tot_sites;
   char *in_labels;
   bool call_geno;
   double N_thresh;

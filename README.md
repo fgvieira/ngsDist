@@ -34,12 +34,13 @@ Executables are built into the main directory. If you wish to clean all binaries
 
 ### Usage
 
-    % ./ngsDist [options] --geno glf/in/file --n_ind INT --n_sites INT --out_prefix output/file
+    % ./ngsDist [options] --geno /path/to/input/file --n_ind INT --n_sites INT --out /path/to/output/file
 
 #### Parameters
 * `--geno FILE`: input file with genotypes, genotype likelihoods or genotype posterior probabilities.
 * `--n_ind INT`: sample size (number of individuals).
-* `--n_sites INT`: total number of sites.
+* `--n_sites INT`: number of sites in input file.
+* `--tot_sites INT`: total number of sites in dataset.
 * `--labels FILE`: labels, one per line, of the input sequences.
 * `--probs`: is the input genotype probabilities (likelihoods or posteriors)?
 * `--log_scale`: Ii the input in log-scale?.
@@ -51,15 +52,15 @@ Executables are built into the main directory. If you wish to clean all binaries
 * `--indep_geno`: assume independence between genotypes?
 * `--n_boot_rep INT`: number of bootstrap replicates [0].
 * `--boot_block_size INT`: block size for bootstrapping [1].
-* `--out_prefix FILE`: output file name.
+* `--out FILE`: output file name.
 * `--n_threads INT`: number of threads to use. [1]
 * `--version`: prints program version and exits.
 * `--verbose INT`: selects verbosity level. [1]
 * `--seed INT`: random number generator seed (only for the bootstrap analysis).
 
 ### Input data
-As input, `ngsLD` accepts both genotypes, genotype likelihoods (GP) or genotype posterior probabilities (GP). Genotypes must be input as gziped TSV with one row per site and one column per individual (__n_sites\*n_ind__) and genotypes coded as [-1, 0, 1, 2].
-As for GL and GP, `ngsLD` accepts both gzipd TSV and binary formats, but with 3 columns per individual (__3\*n_sites\*n_ind__) and, in the case of the binary, the GL/GP coded as doubles
+As input, `ngsDist` accepts both genotypes, genotype likelihoods (GP) or genotype posterior probabilities (GP). Genotypes must be input as gziped TSV with one row per site and one column per individual (__n_sites\*n_ind__) and genotypes coded as [-1, 0, 1, 2].
+As for GL and GP, `ngsDist` accepts both gzipd TSV and binary formats, but with 3 columns per individual (__3\*n_sites\*n_ind__) and, in the case of the binary, the GL/GP coded as doubles
 
 ### Thread pool
 The thread pool	implementation was adapted from Mathias Brossard's and is freely available from:
