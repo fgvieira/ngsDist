@@ -18,7 +18,7 @@ cat $SIM_DATA/testA.geno | perl -s -p -e 's/0 0/0/g; s/(\w) \1/2/g; s/\w \w/1/g;
 
 ##### Genotypes' likelihood and posterior probabilities
 # Binary, normal-scale
-$ANGSD/angsd -glf $SIM_DATA/testA.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_IND -doMajorMinor 1 -doPost 1 -doMaf 1 -doGeno 32 -out testA_32
+$ANGSD/angsd -glf $SIM_DATA/testA.glf.gz -fai $SIM_DATA/testAF.ANC.fas.fai -nInd $N_IND -doMajorMinor 1 -doPost 1 -doMaf 1 -doGeno 32 -out testA_32
 gunzip -f testA_32.geno.gz
 ../ngsDist --n_threads 10 --seed 12345 --verbose 1 --geno testA_32.geno --probs --n_ind $N_IND --n_sites $N_SITES --labels testA.labels                                                                                  --out testA_32.dist
 ../ngsDist --n_threads 10 --seed 12345 --verbose 1 --geno testA_32.geno --probs --n_ind $N_IND --n_sites $N_SITES --labels testA.labels --n_boot_rep 5                                                                   --out testA_32B.dist
@@ -27,7 +27,7 @@ gunzip -f testA_32.geno.gz
 ../ngsDist --n_threads 10 --seed 12345 --verbose 1 --geno testA_32.geno --probs --n_ind $N_IND --n_sites $N_SITES --labels testA.labels --n_boot_rep 5 --boot_block_size 10 --call_geno --N_thresh 0.3 --call_thresh 0.9 --out testA_32B-10CGf.dist
 
 # Text, normal scale
-$ANGSD/angsd -glf $SIM_DATA/testA.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_IND -doMajorMinor 1 -doPost 1 -doMaf 1 -doGeno 8 -out testA_8
+$ANGSD/angsd -glf $SIM_DATA/testA.glf.gz -fai $SIM_DATA/testAF.ANC.fas.fai -nInd $N_IND -doMajorMinor 1 -doPost 1 -doMaf 1 -doGeno 8 -out testA_8
 ../ngsDist --n_threads 10 --seed 12345 --verbose 1 --geno testA_8.geno.gz --probs --n_ind $N_IND --n_sites $N_SITES --labels testA.labels                                                                                  --out testA_8.dist
 ../ngsDist --n_threads 10 --seed 12345 --verbose 1 --geno testA_8.geno.gz --probs --n_ind $N_IND --n_sites $N_SITES --labels testA.labels --n_boot_rep 5                                                                   --out testA_8B.dist
 ../ngsDist --n_threads 10 --seed 12345 --verbose 1 --geno testA_8.geno.gz --probs --n_ind $N_IND --n_sites $N_SITES --labels testA.labels --n_boot_rep 5 --boot_block_size 10                                              --out testA_8B-10.dist
