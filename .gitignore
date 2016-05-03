@@ -1,0 +1,7 @@
+gen_func.o
+ngsDist
+ngsDist.o
+parse_args.o
+read_data.o
+threadpool.o
+
