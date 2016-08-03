@@ -48,7 +48,7 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
       {"N_thresh", required_argument, NULL, 'N'},
       {"call_thresh", required_argument, NULL, 'C'},
       {"pairwise_del", no_argument, NULL, 'D'},
-      {"alt_het_diff", no_argument, NULL, 'd'},
+      {"alt_het_dist", no_argument, NULL, 'd'},
       {"indep_geno", no_argument, NULL, 'I'},
       {"n_boot_rep", required_argument, NULL, 'b'},
       {"boot_block_size", required_argument, NULL, 'B'},
