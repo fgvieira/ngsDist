@@ -49,11 +49,17 @@ int main (int argc, char** argv) {
       fprintf(stderr, "==> Fewer combinations (%ld) than threads (%d). Reducing the number of threads...\n", n_comb, pars->n_threads);
     pars->n_threads = n_comb;
   }
-  // If input are genotypes (either called ot not) assume independence between genotypes (faster)
-  if(pars->call_geno || !pars->in_probs)
-    pars->indep_geno = true;
 
-  if(pars->indep_geno)
+  // If input are genotypes (either called ot not) assume independence between genotypes (faster)
+  if(!pars->in_probs && !pars->indep_geno){
+    fprintf(stderr, "==> Using faster algorithm (assuming independence of genotypes) since input are genotypes!\n");
+    pars->indep_geno = true;
+  }
+  else if(pars->call_geno && !pars->indep_geno){
+    fprintf(stderr, "==> Using faster algorithm (assuming independence of genotypes) since calling genotypes!\n");
+    pars->indep_geno = true;
+  }
+  else if(pars->indep_geno)
     if(pars->verbose >= 1)
       fprintf(stderr, "==> Using faster algorithm (assuming independence of genotypes)!\n");
 
