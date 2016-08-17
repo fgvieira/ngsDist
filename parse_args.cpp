@@ -16,7 +16,9 @@ void init_pars(params *pars) {
   pars->N_thresh = 0;
   pars->call_thresh = 0;
   pars->pairwise_del = false;
-  // Distance score matrix based on Eq 12 from Gronau et al 2011 and Eq 8.1 from Del Vecchyo et al. 2014
+  // Distance score matrix based on:
+  // Gronau I    et al. 2011 (eq 12)
+  // Freedman AH et al. 2014 (eq 8.1)
   pars->score[0][0] = pars->score[1][1] = pars->score[2][2] = 0; 
   pars->score[0][1] = pars->score[1][0] = pars->score[1][2] = pars->score[2][1] = 0.5; 
   pars->score[0][2] = pars->score[2][0] = 1; 
@@ -48,7 +50,7 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
       {"N_thresh", required_argument, NULL, 'N'},
       {"call_thresh", required_argument, NULL, 'C'},
       {"pairwise_del", no_argument, NULL, 'D'},
-      {"alt_het_dist", no_argument, NULL, 'd'},
+      {"avg_nuc_dist", no_argument, NULL, 'd'},
       {"indep_geno", no_argument, NULL, 'I'},
       {"n_boot_rep", required_argument, NULL, 'b'},
       {"boot_block_size", required_argument, NULL, 'B'},
@@ -99,6 +101,7 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
     case 'D':
       pars->pairwise_del = true;
     case 'd':
+      // Freedman AH et al. 2014 (eq 8.2)
       pars->score[1][1] = 0.5;
       break;
     case 'I':
@@ -132,7 +135,7 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
 
   if(pars->verbose >= 1) {
     fprintf(stderr, "==> Input Arguments:\n");
-    fprintf(stderr, "\tgeno: %s\n\tprobs: %s\n\tlog_scale: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\ttot_sites: %lu\n\tlabels: %s\n\tcall_geno: %s\n\tN_thresh: %f\n\tcall_thresh: %f\n\tpairwise_del: %s\n\talt_het_dist: %f\n\tgeno_indep: %s\n\tn_boot_rep: %lu\n\tboot_block_size: %lu\n\tout: %s\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
+    fprintf(stderr, "\tgeno: %s\n\tprobs: %s\n\tlog_scale: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\ttot_sites: %lu\n\tlabels: %s\n\tcall_geno: %s\n\tN_thresh: %f\n\tcall_thresh: %f\n\tpairwise_del: %s\n\tavg_nuc_dist: %s\n\tgeno_indep: %s\n\tn_boot_rep: %lu\n\tboot_block_size: %lu\n\tout: %s\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
 	    pars->in_geno,
 	    pars->in_probs ? "true":"false",
 	    pars->in_logscale ? "true":"false",
@@ -144,7 +147,7 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
 	    pars->N_thresh,
 	    pars->call_thresh,
 	    pars->pairwise_del ? "true":"false",
-	    pars->score[1][1],
+	    pars->score[1][1] == 0.5 ? "true":"false",
 	    pars->indep_geno ? "true":"false",
 	    pars->n_boot_rep,
 	    pars->boot_block_size,
