@@ -62,6 +62,20 @@ Executables are built into the main directory. If you wish to clean all binaries
 As input, `ngsDist` accepts both genotypes, genotype likelihoods (GP) or genotype posterior probabilities (GP). Genotypes must be input as gziped TSV with sites on rows, individuals on columns (__n_sites\*n_ind__) and genotypes coded as [-1, 0, 1, 2]. The file can have a header and an arbitrary number of columns preceeding the actual data (that will all be ignored), much like the Beagle file format ([link](http://faculty.washington.edu/browning/beagle/beagle.html)).
 As for GL and GP, `ngsDist` accepts both gzipd TSV and binary formats, but with 3 columns per individual (__3\*n_sites\*n_ind__) and, in the case of the binary, the GL/GP coded as doubles
 
+### Bootstrap Trees
+If you want branch support values on your tree, you can use `ngsDist` with the option `--n_boot_rep` and `--boot_block_size` to bootstrap the input data. `ngsDist` will output one distance matrix (the first) for the input dataset, plus `--n_boot_rep` matrices for each of the replicates. After, you can use any program (e.g. [FastME](http://atgc.lirmm.fr/fastme/)) to infer a tree for each of the matrices:
+
+    fastme -T 20 -i testA_8B.dist -s -D 6 -o testA_8B.nwk
+
+split the input dataset tree from the bootstraped ones:
+
+    head -n 1 testA_8B.nwk > testA_8B.main.nwk
+    tail -n +2 testA_8B.nwk > testA_8B.boot.nwk
+
+and use [RAxML](https://github.com/stamatak/standard-RAxML) to place supports on the main tree:
+
+    raxmlHPC -f i -t testA_8B.main.nwk -z testA_8B.boot.nwk -m GTRCAT -n testA_8B
+
 ### Thread pool
 The thread pool	implementation was adapted from Mathias Brossard's and is freely available from:
 https://github.com/mbrossard/threadpool
