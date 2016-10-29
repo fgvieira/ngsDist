@@ -6,7 +6,7 @@ SHARED_LIB = gen_func.cpp read_data.cpp threadpool.c
 
 CFLAGS = -I$(SHARED_DIR)
 DFLAGS = -g -Wall -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
-LIB = -lgsl -lgslcblas -lz -lpthread
+LIB = $(shell pkg-config --cflags --libs gsl) -lz -lpthread
 
 
 
