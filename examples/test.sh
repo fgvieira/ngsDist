@@ -37,7 +37,7 @@ $ANGSD/angsd -glf $SIM_DATA/testA.glf.gz -fai $SIM_DATA/testAF.ANC.fas.fai -nInd
 
 ##### Check MD5
 rm -f *.arg
-TMP=`mktemp`
+TMP=`mktemp --suffix .ngsDist`
 md5sum testA_* | fgrep -v '.gz' | sort -k 2,2 > $TMP
 if diff $TMP test.md5 > /dev/null
 then
