@@ -17,6 +17,7 @@ typedef struct {
   uint64_t n_sites;
   uint64_t tot_sites;
   char *in_labels;
+  bool in_labels_header;
   bool call_geno;
   double N_thresh;
   double call_thresh;

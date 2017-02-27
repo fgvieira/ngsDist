@@ -12,6 +12,7 @@ void init_pars(params *pars) {
   pars->n_sites = 0;
   pars->tot_sites = 0;
   pars->in_labels = NULL;
+  pars->in_labels_header = false;
   pars->call_geno = false;
   pars->N_thresh = 0;
   pars->call_thresh = 0;
@@ -46,6 +47,7 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
       {"n_sites", required_argument, NULL, 's'},
       {"tot_sites", required_argument, NULL, 'S'},
       {"labels", required_argument, NULL, 'L'},
+      {"labelsH", required_argument, NULL, 'H'},
       {"call_geno", no_argument, NULL, 'c'},
       {"N_thresh", required_argument, NULL, 'N'},
       {"call_thresh", required_argument, NULL, 'C'},
@@ -63,7 +65,7 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
     };
   
   int c = 0;
-  while ( (c = getopt_long_only(argc, argv, "g:pln:s:S:L:cN:C:DdIb:B:o:x:vV:r:", long_options, NULL)) != -1 )
+  while ( (c = getopt_long_only(argc, argv, "g:pln:s:S:L:H:cN:C:DdIb:B:o:x:vV:r:", long_options, NULL)) != -1 )
     switch (c) {
     case 'g':
       pars->in_geno = optarg;
@@ -86,6 +88,11 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
       break;
     case 'L':
       pars->in_labels = optarg;
+      pars->in_labels_header = false;
+      break;
+    case 'H':
+      pars->in_labels = optarg;
+      pars->in_labels_header = true;
       break;
     case 'c':
       pars->call_geno = true;
@@ -135,7 +142,7 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
 
   if(pars->verbose >= 1) {
     fprintf(stderr, "==> Input Arguments:\n");
-    fprintf(stderr, "\tgeno: %s\n\tprobs: %s\n\tlog_scale: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\ttot_sites: %lu\n\tlabels: %s\n\tcall_geno: %s\n\tN_thresh: %f\n\tcall_thresh: %f\n\tpairwise_del: %s\n\tavg_nuc_dist: %s\n\tgeno_indep: %s\n\tn_boot_rep: %lu\n\tboot_block_size: %lu\n\tout: %s\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
+    fprintf(stderr, "\tgeno: %s\n\tprobs: %s\n\tlog_scale: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\ttot_sites: %lu\n\tlabels: %s (%s header)\n\tcall_geno: %s\n\tN_thresh: %f\n\tcall_thresh: %f\n\tpairwise_del: %s\n\tavg_nuc_dist: %s\n\tgeno_indep: %s\n\tn_boot_rep: %lu\n\tboot_block_size: %lu\n\tout: %s\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
 	    pars->in_geno,
 	    pars->in_probs ? "true":"false",
 	    pars->in_logscale ? "true":"false",
@@ -143,6 +150,7 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
 	    pars->n_sites,
 	    pars->tot_sites,
 	    pars->in_labels,
+	    pars->in_labels_header ? "WITH" : "WITHOUT",
 	    pars->call_geno ? "true":"false",
 	    pars->N_thresh,
 	    pars->call_thresh,

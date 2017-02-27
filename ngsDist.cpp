@@ -103,27 +103,13 @@ int main (int argc, char** argv) {
     if(pars->verbose >= 1)
       fprintf(stderr, "==> Reading labels\n");
 
-    int64_t ret = read_file(pars->in_labels, &pars->ind_labels, 1000);
-    if(ret == -1)
+    pars->ind_labels = read_file(pars->in_labels, (pars->in_labels_header ? 1 : 0), pars->n_ind, BUFF_LEN);
+    if(pars->ind_labels == NULL)
       error(__FUNCTION__, "cannot open labels file!");
-
-    if(ret == (int64_t) pars->n_ind +1){
-      fprintf(stderr, "> Assuming label file has a header\n");
-      ret--;
-      char **tmp = pars->ind_labels;
-      pars->ind_labels = init_ptr(ret, 0, (const char*) '\0');
-      memcpy(pars->ind_labels, tmp+1, ret*sizeof(char*));
-      free_ptr((void*) *tmp); // Free first line (the header)
-      free_ptr((void**) tmp); // Free remaining pointers
-    }
-    if(pars->verbose >= 1)
-      fprintf(stderr, "> Found %ld labels in file\n", ret);
-    if(ret != (int64_t) pars->n_ind)
-      error(__FUNCTION__, "wrong number of labels provided!");
 
     // Fix labels...
     char* ptr;
-    for(int64_t i = 0; i < ret; i++){
+    for(uint64_t i = 0; i < pars->n_ind; i++){
       ptr = strchr(pars->ind_labels[i], '\t');
       if(ptr != NULL)
 	*ptr = '\0';
