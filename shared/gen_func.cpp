@@ -737,7 +737,6 @@ char **init_ptr(uint64_t A, uint64_t B, const char *init){
     ptr[a] = init_ptr(B, pinit);
   }
   delete [] pinit;
-  delete [] pch;
 
   return ptr;
 }

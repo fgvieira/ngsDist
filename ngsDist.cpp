@@ -22,7 +22,7 @@
 #include "ngsDist.hpp"
 #include "emOptim2.cpp"
 
-char const* version = "1.0.2";
+char const* version = "1.0.3";
 
 void rnd_map_data(params *pars, uint64_t n_blocks);
 
