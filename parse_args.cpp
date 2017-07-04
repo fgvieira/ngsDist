@@ -78,13 +78,13 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
       pars->in_probs = true;
       break;
     case 'n':
-      pars->n_ind = atoi(optarg);
+      pars->n_ind = atol(optarg);
       break;
     case 's':
-      pars->n_sites = atoi(optarg);
+      pars->n_sites = atol(optarg);
       break;
     case 'S':
-      pars->tot_sites = atoi(optarg);
+      pars->tot_sites = atol(optarg);
       break;
     case 'L':
       pars->in_labels = optarg;
@@ -115,10 +115,10 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
       pars->indep_geno = true;
       break;
     case 'b':
-      pars->n_boot_rep = atoi(optarg);
+      pars->n_boot_rep = atol(optarg);
       break;
     case 'B':
-      pars->boot_block_size = atoi(optarg);
+      pars->boot_block_size = atol(optarg);
       break;
     case 'o':
       pars->out = optarg;
