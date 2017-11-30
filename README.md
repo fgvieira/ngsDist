@@ -64,18 +64,22 @@ As input, `ngsDist` accepts both genotypes, genotype likelihoods (GP) or genotyp
 As for GL and GP, `ngsDist` accepts both gzipd TSV and binary formats, but with 3 columns per individual ![3.n_sites.n_ind](http://mathurl.com/ycvy5fvx.png) and, in the case of binary, the GL/GP coded as doubles.
 
 ### Bootstrap Trees
-If you want branch support values on your tree, you can use `ngsDist` with the option `--n_boot_rep` and `--boot_block_size` to bootstrap the input data. `ngsDist` will output one distance matrix (the first) for the input dataset, plus `--n_boot_rep` matrices for each of the bootstrap replicates. After, infer a tree for each of the matrices using the program of your choice. For example, using [FastME](http://atgc.lirmm.fr/fastme/) on a dataset with 5 bootstrap replicates:
+If you want branch support values on your tree, you can use `ngsDist` with the option `--n_boot_rep` and `--boot_block_size` to bootstrap the input data. `ngsDist` will output one distance matrix (the first) for the input full dataset, plus `--n_boot_rep` matrices for each of the bootstrap replicates. After, infer a tree for each of the matrices using the program of your choice. For example, using [FastME](http://atgc.lirmm.fr/fastme/) on a dataset with 5 bootstrap replicates:
 
     fastme -T 20 -i testA_8B.dist -s -D 6 -o testA_8B.nwk
 
 split the input dataset tree from the bootstraped ones:
 
     head -n 1 testA_8B.nwk > testA_8B.main.nwk
-    tail -n +2 testA_8B.nwk > testA_8B.boot.nwk
+    tail -n +2 testA_8B.nwk | awk 'NF' > testA_8B.boot.nwk
 
-and use [RAxML](https://github.com/stamatak/standard-RAxML) to place supports on the main tree:
+and,to place supports on the main tree, use [RAxML](https://github.com/stamatak/standard-RAxML):
 
     raxmlHPC -f b -t testA_8B.main.nwk -z testA_8B.boot.nwk -m GTRCAT -n testA_8B
+
+or [RAxML-NG](https://github.com/amkozlov/raxml-ng):
+
+    raxml-ng --support --tree testA_8B.main.nwk --bs-trees testA_8B.boot.nwk --prefix testA_8B
 
 ### Thread pool
 The thread pool	implementation was adapted from Mathias Brossard's and is freely available from:
