@@ -28,7 +28,6 @@ void init_pars(params *pars) {
   pars->boot_block_size = 1;
   pars->out = NULL;
   pars->n_threads = 1;
-  pars->version = false;
   pars->verbose = 1;
   pars->seed = time(NULL);
   pars->rnd_gen = NULL;
@@ -58,14 +57,13 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
       {"boot_block_size", required_argument, NULL, 'B'},
       {"out", required_argument, NULL, 'o'},
       {"n_threads", required_argument, NULL, 'x'},
-      {"version", no_argument, NULL, 'v'},
       {"verbose", required_argument, NULL, 'V'},
       {"seed", required_argument, NULL, 'r'},
       {0, 0, 0, 0}
     };
   
   int c = 0;
-  while ( (c = getopt_long_only(argc, argv, "g:pln:s:S:L:H:cN:C:DdIb:B:o:x:vV:r:", long_options, NULL)) != -1 )
+  while ( (c = getopt_long_only(argc, argv, "g:pln:s:S:L:H:cN:C:DdIb:B:o:x:V:r:", long_options, NULL)) != -1 )
     switch (c) {
     case 'g':
       pars->in_geno = optarg;
@@ -126,9 +124,6 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
     case 'x':
       pars->n_threads = atoi(optarg);
       break;
-    case 'v':
-      pars->version = true;
-      break;
     case 'V':
       pars->verbose = atoi(optarg);
       break;
@@ -142,7 +137,7 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
 
   if(pars->verbose >= 1) {
     fprintf(stderr, "==> Input Arguments:\n");
-    fprintf(stderr, "\tgeno: %s\n\tprobs: %s\n\tlog_scale: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\ttot_sites: %lu\n\tlabels: %s (%s header)\n\tcall_geno: %s\n\tN_thresh: %f\n\tcall_thresh: %f\n\tpairwise_del: %s\n\tavg_nuc_dist: %s\n\tgeno_indep: %s\n\tn_boot_rep: %lu\n\tboot_block_size: %lu\n\tout: %s\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
+    fprintf(stderr, "\tgeno: %s\n\tprobs: %s\n\tlog_scale: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\ttot_sites: %lu\n\tlabels: %s (%s header)\n\tcall_geno: %s\n\tN_thresh: %f\n\tcall_thresh: %f\n\tpairwise_del: %s\n\tavg_nuc_dist: %s\n\tgeno_indep: %s\n\tn_boot_rep: %lu\n\tboot_block_size: %lu\n\tout: %s\n\tn_threads: %d\n\tverbose: %d\n\tseed: %d\n\tversion: %s (%s @ %s)\n\n",
 	    pars->in_geno,
 	    pars->in_probs ? "true":"false",
 	    pars->in_logscale ? "true":"false",
@@ -161,9 +156,9 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
 	    pars->boot_block_size,
 	    pars->out,
 	    pars->n_threads,
-	    pars->version ? "true":"false",
 	    pars->verbose,
-	    pars->seed);
+	    pars->seed,
+	    version, __DATE__, __TIME__);
   }
   if(pars->verbose > 4)
     fprintf(stderr, "==> Verbose values greater than 4 for debugging purpose only. Expect large amounts of info on screen\n");
@@ -173,10 +168,6 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
   /////////////////////
   // Check Arguments //
   /////////////////////
-  if(pars->version) {
-    fprintf(stderr, "ngsDist v%s\nCompiled on %s @ %s\n", version, __DATE__, __TIME__);
-    exit(0);
-  }
   if(pars->in_geno == NULL)
     error(__FUNCTION__, "genotype input file (--geno) missing!");
   if(pars->n_ind == 0)

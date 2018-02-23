@@ -28,7 +28,6 @@ typedef struct {
   uint64_t boot_block_size;
   char* out;
   uint n_threads;
-  bool version;
   uint verbose;
   uint seed;
   gsl_rng *rnd_gen;

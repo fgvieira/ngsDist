@@ -22,7 +22,7 @@
 #include "ngsDist.hpp"
 #include "emOptim2.cpp"
 
-char const* version = "1.0.4";
+char const* version = "1.0.5";
 
 void rnd_map_data(params *pars, uint64_t n_blocks);
 
@@ -131,9 +131,7 @@ int main (int argc, char** argv) {
   // Read from GENO file
   if(pars->verbose >= 1)
     fprintf(stderr, "==> Reading genotype data\n");
-  pars->in_geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_probs, pars->in_logscale, pars->n_ind, pars->n_sites);
-  // Read_geno always returns genos in logscale
-  pars->in_logscale = true;
+  pars->in_geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_probs, &pars->in_logscale, pars->n_ind, pars->n_sites);
 
   // Make copy of GLs in case of bootstrap
   pars->geno_lkl = init_ptr(pars->n_ind, pars->n_sites+1, 0, -INF);

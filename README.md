@@ -55,7 +55,6 @@ Executables are built into the main directory. If you wish to clean all binaries
 * `--boot_block_size INT`: block size for bootstrapping [1].
 * `--out FILE`: output file name.
 * `--n_threads INT`: number of threads to use. [1]
-* `--version`: prints program version and exits.
 * `--verbose INT`: selects verbosity level. [1]
 * `--seed INT`: random number generator seed (only for the bootstrap analysis).
 
