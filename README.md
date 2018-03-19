@@ -27,7 +27,7 @@ To install these tools just run:
 
     % cd ngsDist
     % make
-    % make test
+    % make test (if installed through [ngsTools](https://github.com/mfumagalli/ngsTools))
 
 Executables are built into the main directory. If you wish to clean all binaries and intermediate files:
 
@@ -59,7 +59,7 @@ Executables are built into the main directory. If you wish to clean all binaries
 * `--seed INT`: random number generator seed (only for the bootstrap analysis).
 
 ### Input data
-As input, `ngsDist` accepts both genotypes, genotype likelihoods (GP) or genotype posterior probabilities (GP). Genotypes must be input as gziped TSV with one row per site and one column per individual ![n_sites.n_ind](http://mathurl.com/ycxtfy8u.png) and genotypes coded as [-1, 0, 1, 2]. The file can have a header and an arbitrary number of columns preceeding the actual data (that will all be ignored), much like the Beagle file format ([link](http://faculty.washington.edu/browning/beagle/beagle.html)).
+As input, `ngsDist` accepts both genotypes, genotype likelihoods (GL) or genotype posterior probabilities (GP). Genotypes must be input as gziped TSV with one row per site and one column per individual ![n_sites.n_ind](http://mathurl.com/ycxtfy8u.png) and genotypes coded as [-1, 0, 1, 2]. The file can have a header and an arbitrary number of columns preceeding the actual data (that will all be ignored), much like the Beagle file format ([link](http://faculty.washington.edu/browning/beagle/beagle.html)).
 As for GL and GP, `ngsDist` accepts both gzipd TSV and binary formats, but with 3 columns per individual ![3.n_sites.n_ind](http://mathurl.com/ycvy5fvx.png) and, in the case of binary, the GL/GP coded as doubles.
 
 ### Bootstrap Trees
