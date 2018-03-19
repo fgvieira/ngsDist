@@ -23,11 +23,11 @@ To install the entire package just download the source code:
 
     % git clone https://github.com/fgvieira/ngsDist.git
 
-To install these tools just run:
+To install these tools just run (test only works if installed through [ngsTools](https://github.com/mfumagalli/ngsTools)):
 
     % cd ngsDist
     % make
-    % make test (if installed through [ngsTools](https://github.com/mfumagalli/ngsTools))
+    % make test
 
 Executables are built into the main directory. If you wish to clean all binaries and intermediate files:
 
