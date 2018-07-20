@@ -22,7 +22,7 @@
 #include "ngsDist.hpp"
 #include "emOptim2.cpp"
 
-char const* version = "1.0.5";
+char const* version = "1.0.6";
 
 void rnd_map_data(params *pars, uint64_t n_blocks);
 
@@ -333,14 +333,14 @@ double gen_dist(params *p, uint64_t i1, uint64_t i2){
       }
 
     if(p->verbose >= 8)
-      fprintf(stderr, "Cumulative distance between indiv %lu and %lu at site %lu: %f\n", i1, i2, s, dist);
+      fprintf(stderr, "Cumulative distance between %s (ind %lu) and %s (ind %lu) at site %lu: %f\n", p->ind_labels[i1], i1, p->ind_labels[i2], i2, s, dist);
 
     cnt++;
     free_ptr(sfs);
   }
 
   if(p->verbose >=3)
-    fprintf(stderr, "\tFound %lu sites valid between Ind %lu and Ind %lu!\n", cnt, i1, i2);
+    fprintf(stderr, "\tFound %f differences out of %lu valid sites (%f) between %s (ind %lu) and %s (ind %lu)!\n", dist, cnt, dist/(double) cnt, p->ind_labels[i1], i1, p->ind_labels[i2], i2);
 
   dalloc(GL1, 1);
   dalloc(GL2, 1);
@@ -349,7 +349,7 @@ double gen_dist(params *p, uint64_t i1, uint64_t i2){
     cnt = p->tot_sites;
 
   // Calculates raw distance
-  dist /= cnt;
+  dist /= (double) cnt;
   // Logarithmic transformation (log(1-d)) to make distance additive (assuming constant Ne) and avoid violating minimum evolution and NJ assumptions.
   dist = -log(1-dist);
 
