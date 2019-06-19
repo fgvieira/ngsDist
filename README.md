@@ -57,7 +57,7 @@ Executables are built into the main directory. If you wish to clean all binaries
 * `--avg_nuc_dist`: use average number of nucleotide differences as distance (by default, `ngsDist` uses genotype distances based on allele frequency differences). Only pairs of heterozygous positions are actually affected when using this option, with their distance being 0.5 (instead of 0 by default).
 * `--indep_geno`: assume independence between genotypes?
 * `--n_boot_rep INT`: number of bootstrap replicates [0].
-* `--boot_block_size INT`: block size (in bps) for bootstrapping [1].
+* `--boot_block_size INT`: block size (in alignment positions) for bootstrapping [1].
 * `--out FILE`: output file name.
 * `--n_threads INT`: number of threads to use. [1]
 * `--verbose INT`: selects verbosity level. [1]
@@ -71,7 +71,7 @@ As for GL and GP, `ngsDist` accepts both gzipd TSV and binary formats, but with 
 `ngsDist` calculates a "p-distance", being its biggest strength the possibility of taking genotype uncertainty (from genotype likelihoods) into account. It currently does not use any evolutionary model (e.g. JC, K2P), but it is something that could be added in the future.
 
 ### Bootstrap Trees
-If you want branch support values on your tree, you can use `ngsDist` with the option `--n_boot_rep` and `--boot_block_size` to bootstrap the input data. `ngsDist` will output one distance matrix (the first) for the input full dataset, plus `--n_boot_rep` matrices for each of the bootstrap replicates. After, infer a tree for each of the matrices using the program of your choice. For example, using [FastME](http://atgc.lirmm.fr/fastme/) on a dataset with 5 bootstrap replicates:
+If you want branch support values on your tree, you can use `ngsDist` with the option `--n_boot_rep` and `--boot_block_size` to bootstrap the input data. `ngsDist` will output one distance matrix (the first) for the input full dataset, plus `--n_boot_rep` matrices for each of the bootstrap replicates. After, infer a tree for each of the matrices using the program of your choice and plot them. For example, using [FastME](http://atgc.lirmm.fr/fastme/) on a dataset with 5 bootstrap replicates:
 
     fastme -T 20 -i testA_8B.dist -s -D 6 -o testA_8B.nwk
 
@@ -80,7 +80,7 @@ split the input dataset tree from the bootstraped ones:
     head -n 1 testA_8B.nwk > testA_8B.main.nwk
     tail -n +2 testA_8B.nwk | awk 'NF' > testA_8B.boot.nwk
 
-and,to place supports on the main tree, use [RAxML](https://github.com/stamatak/standard-RAxML):
+and, to place supports on the main tree, use [RAxML](https://github.com/stamatak/standard-RAxML):
 
     raxmlHPC -f b -t testA_8B.main.nwk -z testA_8B.boot.nwk -m GTRCAT -n testA_8B
 
