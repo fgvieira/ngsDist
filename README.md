@@ -55,7 +55,7 @@ Executables are built into the main directory. If you wish to clean all binaries
 * `--call_thresh DOUBLE`: minimum threshold to call genotype; left as is if otherwise (assumes -call_geno)
 * `--pairwise_del`: pairwise deletion of missing data.
 * `--avg_nuc_dist`: use average number of nucleotide differences as distance (by default, `ngsDist` uses genotype distances based on allele frequency differences). Only pairs of heterozygous positions are actually affected when using this option, with their distance being 0.5 (instead of 0 by default).
-* `--indep_geno`: assume independence between genotypes?
+* `--indep_geno`: assume independence between genotypes? If so, skip EM step and just multiply probabilities (faster).
 * `--n_boot_rep INT`: number of bootstrap replicates [0].
 * `--boot_block_size INT`: block size (in alignment positions) for bootstrapping [1].
 * `--out FILE`: output file name.
