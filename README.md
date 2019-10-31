@@ -55,9 +55,10 @@ Executables are built into the main directory. If you wish to clean all binaries
 * `--call_thresh DOUBLE`: minimum threshold to call genotype; left as is if otherwise (assumes -call_geno)
 * `--pairwise_del`: pairwise deletion of missing data.
 * `--avg_nuc_dist`: use average number of nucleotide differences as distance (by default, `ngsDist` uses genotype distances based on allele frequency differences). Only pairs of heterozygous positions are actually affected when using this option, with their distance being 0.5 (instead of 0 by default).
+* `--evol_model`: DNA evolutionary (0) p-distance, (1) JC69, (2) K80, (3) F81, (4) HKY85, (5) TN93, (6) GTR. [0]
 * `--indep_geno`: assume independence between genotypes? If so, skip EM step and just multiply probabilities (faster).
 * `--n_boot_rep INT`: number of bootstrap replicates [0].
-* `--boot_block_size INT`: block size (in alignment positions) for bootstrapping [1].
+* `--boot_block_size INT`: block size (in alignment positions) for bootstrapping. [1]
 * `--out FILE`: output file name.
 * `--n_threads INT`: number of threads to use. [1]
 * `--verbose INT`: selects verbosity level. [1]
@@ -68,7 +69,7 @@ As input, `ngsDist` accepts both genotypes, genotype likelihoods (GL) or genotyp
 As for GL and GP, `ngsDist` accepts both gzipd TSV and binary formats, but with 3 columns per individual ![3.n_sites.n_ind](http://mathurl.com/ycvy5fvx.png) and, in the case of binary, the GL/GP coded as doubles.
 
 ### Evolutionary models
-`ngsDist` calculates a "p-distance", being its biggest strength the possibility of taking genotype uncertainty (from genotype likelihoods) into account. It currently does not use any evolutionary model (e.g. JC, K2P), but it is something that could be added in the future.
+`ngsDist` biggest strength is the possibility of taking genotype uncertainty (from genotype likelihoods) into account. At the moment it can only calculate "p-distance" and JC69 corrected distances, since more complex evolutionary model (e.g. K2P, HKY85) are currently under development.
 
 ### Bootstrap Trees
 If you want branch support values on your tree, you can use `ngsDist` with the option `--n_boot_rep` and `--boot_block_size` to bootstrap the input data. `ngsDist` will output one distance matrix (the first) for the input full dataset, plus `--n_boot_rep` matrices for each of the bootstrap replicates. After, infer a tree for each of the matrices using the program of your choice and plot them. For example, using [FastME](http://atgc.lirmm.fr/fastme/) on a dataset with 5 bootstrap replicates:

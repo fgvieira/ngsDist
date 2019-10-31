@@ -23,6 +23,7 @@ typedef struct {
   double call_thresh;
   bool pairwise_del;
   double score[N_GENO][N_GENO];
+  uint64_t evol_model;
   bool indep_geno;
   uint64_t n_boot_rep;
   uint64_t boot_block_size;
@@ -38,7 +39,6 @@ typedef struct {
 
   threadpool_t *thread_pool;
 } params;
-
 
 // Pthread structure
 typedef struct {

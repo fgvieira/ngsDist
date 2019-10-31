@@ -23,6 +23,7 @@ void init_pars(params *pars) {
   pars->score[0][0] = pars->score[1][1] = pars->score[2][2] = 0; 
   pars->score[0][1] = pars->score[1][0] = pars->score[1][2] = pars->score[2][1] = 0.5; 
   pars->score[0][2] = pars->score[2][0] = 1; 
+  pars->evol_model = 0;
   pars->indep_geno = false;
   pars->n_boot_rep = 0;
   pars->boot_block_size = 1;
@@ -32,6 +33,16 @@ void init_pars(params *pars) {
   pars->seed = time(NULL);
   pars->rnd_gen = NULL;
 }
+
+
+// Supported evolutionary models
+const char* evol_model[] = {"None", // p-distance
+			    "JC69", 
+			    "K80", // JC69 + (transiton rates != transversions rates)
+			    "F81", // JC69 + (base freqs != 0.25)
+			    "HKY85", // K80 + F81 
+			    "TN93", // Hasegawa + (A/G != T/C)
+			    "GTR"};
 
 
 // Parses command line args and stores them into struct params
@@ -52,6 +63,7 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
       {"call_thresh", required_argument, NULL, 'C'},
       {"pairwise_del", no_argument, NULL, 'D'},
       {"avg_nuc_dist", no_argument, NULL, 'd'},
+      {"evol_model", required_argument, NULL, 'm'},
       {"indep_geno", no_argument, NULL, 'I'},
       {"n_boot_rep", required_argument, NULL, 'b'},
       {"boot_block_size", required_argument, NULL, 'B'},
@@ -63,7 +75,7 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
     };
   
   int c = 0;
-  while ( (c = getopt_long_only(argc, argv, "g:pln:s:S:L:H:cN:C:DdIb:B:o:x:V:r:", long_options, NULL)) != -1 )
+  while ( (c = getopt_long_only(argc, argv, "g:pln:s:S:L:H:cN:C:Ddm:Ib:B:o:x:V:r:", long_options, NULL)) != -1 )
     switch (c) {
     case 'g':
       pars->in_geno = optarg;
@@ -109,6 +121,9 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
       // Freedman AH et al. 2014 (eq 8.2)
       pars->score[1][1] = 0.5;
       break;
+    case 'm':
+      pars->evol_model = atol(optarg);
+      break;
     case 'I':
       pars->indep_geno = true;
       break;
@@ -137,7 +152,7 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
 
   if(pars->verbose >= 1) {
     fprintf(stderr, "==> Input Arguments:\n");
-    fprintf(stderr, "\tgeno: %s\n\tprobs: %s\n\tlog_scale: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\ttot_sites: %lu\n\tlabels: %s (%s header)\n\tcall_geno: %s\n\tN_thresh: %f\n\tcall_thresh: %f\n\tpairwise_del: %s\n\tavg_nuc_dist: %s\n\tgeno_indep: %s\n\tn_boot_rep: %lu\n\tboot_block_size: %lu\n\tout: %s\n\tn_threads: %d\n\tverbose: %d\n\tseed: %d\n\tversion: %s (%s @ %s)\n\n",
+    fprintf(stderr, "\tgeno: %s\n\tprobs: %s\n\tlog_scale: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\ttot_sites: %lu\n\tlabels: %s (%s header)\n\tcall_geno: %s\n\tN_thresh: %f\n\tcall_thresh: %f\n\tpairwise_del: %s\n\tavg_nuc_dist: %s\n\tevol_model: %s\n\tgeno_indep: %s\n\tn_boot_rep: %lu\n\tboot_block_size: %lu\n\tout: %s\n\tn_threads: %d\n\tverbose: %d\n\tseed: %d\n\tversion: %s (%s @ %s)\n\n",
 	    pars->in_geno,
 	    pars->in_probs ? "true":"false",
 	    pars->in_logscale ? "true":"false",
@@ -151,6 +166,7 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
 	    pars->call_thresh,
 	    pars->pairwise_del ? "true":"false",
 	    pars->score[1][1] == 0.5 ? "true":"false",
+	    evol_model[pars->evol_model],
 	    pars->indep_geno ? "true":"false",
 	    pars->n_boot_rep,
 	    pars->boot_block_size,
@@ -178,6 +194,8 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
     error(__FUNCTION__, "cannot specify total number of sites (--tot_sites) with pairwise deletion (--pairwise_del)!");
   if(pars->call_geno && !pars->in_probs)
     error(__FUNCTION__, "can only call genotypes from likelihoods/probabilities!");
+  if(pars->evol_model < 0 || pars->evol_model > 6)
+    error(__FUNCTION__, "invalid correction method specified!");
   if(pars->out == NULL)
     error(__FUNCTION__, "output prefix (--out) missing!");
   if(pars->n_threads < 1)
