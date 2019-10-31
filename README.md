@@ -8,7 +8,7 @@
 
     Vieira FG, Lassalle F, Korneliussen TS, Fumagalli M
     Improving the estimation of genetic distances from Next-Generation Sequencing data
-    Biological Journal of the Linnean Society (2015) doi: 10.1111/bij.12511
+    Biological Journal of the Linnean Society (2015) 117(1):139-149
 
 ### Installation
 
