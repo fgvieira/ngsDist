@@ -369,9 +369,6 @@ double gen_dist(params *p, uint64_t i1, uint64_t i2){
   } else if(p->evol_model == 5) {
     // TN93
     error(__FUNCTION__, "TN93 model not yet supported");
-  } else if(p->evol_model == 6) {
-    // GTR
-    error(__FUNCTION__, "GTR model not yet supported");
   } else {
     error(__FUNCTION__, "invalid evolutionary model specified!");
   }

@@ -40,9 +40,9 @@ const char* evol_model[] = {"None", // p-distance
 			    "JC69", 
 			    "K80", // JC69 + (transiton rates != transversions rates)
 			    "F81", // JC69 + (base freqs != 0.25)
-			    "HKY85", // K80 + F81 
-			    "TN93", // Hasegawa + (A/G != T/C)
-			    "GTR"};
+			    "HKY85/F84", // K80 + F81 
+			    "TN93", // HKY85/F84 + (A/G != T/C)
+};
 
 
 // Parses command line args and stores them into struct params
@@ -194,7 +194,7 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
     error(__FUNCTION__, "cannot specify total number of sites (--tot_sites) with pairwise deletion (--pairwise_del)!");
   if(pars->call_geno && !pars->in_probs)
     error(__FUNCTION__, "can only call genotypes from likelihoods/probabilities!");
-  if(pars->evol_model < 0 || pars->evol_model > 6)
+  if(pars->evol_model < 0 || pars->evol_model > 5)
     error(__FUNCTION__, "invalid correction method specified!");
   if(pars->out == NULL)
     error(__FUNCTION__, "output prefix (--out) missing!");
