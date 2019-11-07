@@ -78,6 +78,7 @@ double ****init_ptr(uint64_t, uint64_t, uint64_t, uint64_t, double);
 char *strdcat(char*, const char*);
 char *init_ptr(uint64_t, const char*);
 char **init_ptr(uint64_t, uint64_t, const char*);
+char ***init_ptr(uint64_t, uint64_t, uint64_t, const char*);
 
 void free_ptr(void*);
 void free_ptr(void**, uint64_t);

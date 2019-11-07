@@ -106,7 +106,23 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, bool *in_logscale
 
 
 
+char*** read_split(char *in_file, uint64_t n_rows, uint64_t rows_offset, const char* sep){
+  // Allocate memory
+  char ***out = init_ptr(rows_offset + n_rows, 0, 0, (const char*) '\0');
 
+  // Read file
+  char** buf = read_file(in_file, 0, n_rows, BUFF_LEN);
+  if(buf == NULL)
+    error(__FUNCTION__, "cannot open file!");
+
+  // Split string into fields
+  for(uint64_t i = 0; i < n_rows; i++)
+    split(buf[i], sep, &out[rows_offset + i]);
+
+  // Clean-up
+  delete [] buf;
+  return out;
+}
 
 
 

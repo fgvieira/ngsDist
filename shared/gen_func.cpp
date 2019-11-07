@@ -722,7 +722,7 @@ char *init_ptr(uint64_t A, const char *init){
 
 char **init_ptr(uint64_t A, uint64_t B, const char *init){
   if(A < 1)
-    error(__FUNCTION__, "invalid size of array!");
+    return NULL;
 
   char **ptr;
   try{
@@ -741,6 +741,25 @@ char **init_ptr(uint64_t A, uint64_t B, const char *init){
     ptr[a] = init_ptr(B, pinit);
   }
   delete [] pinit;
+
+  return ptr;
+}
+
+
+
+char ***init_ptr(uint64_t A, uint64_t B, uint64_t C, const char *init){
+  if(A < 1)
+    error(__FUNCTION__, "invalid size of array!");
+
+  char ***ptr;
+  try{
+    ptr = new char**[A];
+  }catch (std::bad_alloc&){
+    error(__FUNCTION__, "cannot allocate more memory!");
+  }
+
+  for(uint64_t a = 0; a < A; a++)
+    ptr[a] = init_ptr(B, C, init);
 
   return ptr;
 }
