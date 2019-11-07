@@ -4,5 +4,5 @@
 
 // Function prototypes
 double*** read_geno(char*, bool, bool, bool*, uint64_t, uint64_t);
-char*** read_split(char *, uint64_t, uint64_t = 0, const char* = "\t");
+uint64_t read_split(char *, uint64_t, uint64_t, char***, const char* = "\t");
 double* read_pos(char*, uint64_t);

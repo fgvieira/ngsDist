@@ -219,15 +219,15 @@ gzFile open_gzfile(const char* name, const char* mode, uint64_t buf_size){
 
 
 // Read data from file and place into array
-char **read_file(const char *in_file, uint64_t start_line, uint64_t n_lines, uint64_t buff_size){
+char **read_file(const char *in_file, uint64_t offset, uint64_t n_lines, uint64_t buff_size){
   uint64_t cnt = 0;
   char buf[buff_size];
-  char **ptr = init_ptr(n_lines-start_line, 0, (const char*) '\0');
+  char **ptr = init_ptr(n_lines, 0, (const char*) '\0');
 
   // Open file
-  gzFile in_file_fh = gzopen(in_file, "r");
+  gzFile in_file_fh = open_gzfile(in_file, "r");
   if(in_file_fh == NULL)
-    return NULL;
+    error(__FUNCTION__, "cannot open file!");
 
   for(cnt = 0; cnt < n_lines && !gzeof(in_file_fh); cnt++){
     buf[0] = '\0';
@@ -240,9 +240,10 @@ char **read_file(const char *in_file, uint64_t start_line, uint64_t n_lines, uin
       cnt--;
       continue;
     }
-    // Skip until star_line
-    if(cnt < start_line){
+    // Skip offset
+    if(cnt < offset){
       cnt--;
+      offset--;
       continue;
     }
     // Alloc memory and copy line
@@ -259,12 +260,12 @@ char **read_file(const char *in_file, uint64_t start_line, uint64_t n_lines, uin
 
 
 // Read data from file and place into array double
-double **read_file(const char *in_file, uint64_t start_line, uint64_t n_lines, int n_cols, uint64_t buff_size){
-  char **tmp = read_file(in_file, start_line, n_lines, buff_size);
+double **read_file(const char *in_file, uint64_t offset, uint64_t n_lines, int n_cols, uint64_t buff_size){
+  char **tmp = read_file(in_file, offset, n_lines, buff_size);
   if(tmp == NULL)
     return NULL;
 
-  double **ptr = init_ptr(n_lines-start_line, 0, 0.0);
+  double **ptr = init_ptr(n_lines, 0, 0.0);
   for(uint64_t cnt = 0; cnt < n_lines; cnt++)
     if(split(tmp[cnt], (const char*) " \t", &ptr[cnt]) != n_cols)
       error(__FUNCTION__, "number of columns do not match!");
