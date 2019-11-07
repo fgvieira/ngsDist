@@ -22,7 +22,7 @@
 #include "ngsDist.hpp"
 #include "emOptim2.cpp"
 
-char const* version = "1.0.7";
+char const* version = "1.0.8";
 
 void rnd_map_data(params *pars, uint64_t n_blocks);
 
@@ -123,23 +123,45 @@ int main (int argc, char** argv) {
 	sprintf(pch, "%lu", i);
     }
   }
-  
   if(pars->verbose >= 4)
     for(uint64_t i = 0; i < pars->n_ind; i++)
       fprintf(stderr, "%s\n", pars->ind_labels[i]);
 
-  // Read from GENO file
+
+
+  // Read ALLELES file
+  if(pars->in_alleles){
+    if(pars->verbose >= 1)
+      fprintf(stderr, "==> Reading alleles\n");
+
+    // Allocate memory
+    pars->alleles = init_ptr(pars->n_sites, 0, 0, (const char*) '\0');
+
+    uint64_t n_fields = read_split(pars->in_alleles, (pars->in_alleles_header ? 1 : 0), pars->n_sites, pars->alleles);
+    if(pars->alleles == NULL || n_fields < 2)
+      error(__FUNCTION__, "invalid alleles file!");
+
+    if(pars->verbose >= 4)
+      for(uint64_t s = 0; s < pars->n_sites; s++)
+	fprintf(stderr, "%s\t%s\t%s\t%s\n", pars->alleles[s][0], pars->alleles[s][1], pars->alleles[s][2], pars->alleles[s][3]);
+  }
+
+
+
+  // Read GENO file
   if(pars->verbose >= 1)
     fprintf(stderr, "==> Reading genotype data\n");
   pars->in_geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_probs, &pars->in_logscale, pars->n_ind, pars->n_sites);
 
+
+
   // Make copy of GLs in case of bootstrap
-  pars->geno_lkl = init_ptr(pars->n_ind, pars->n_sites+1, 0, -INF);
+  pars->geno_lkl = init_ptr(pars->n_ind, pars->n_sites, 0, -INF);
   for(uint64_t i = 0; i < pars->n_ind; i++)
-    memcpy(pars->geno_lkl[i], pars->in_geno_lkl[i], (pars->n_sites+1)*sizeof(double*));
+    memcpy(pars->geno_lkl[i], pars->in_geno_lkl[i], (pars->n_sites)*sizeof(double*));
 
   for(uint64_t i = 0; i < pars->n_ind; i++)
-    for(uint64_t s = 1; s <= pars->n_sites; s++){
+    for(uint64_t s = 0; s < pars->n_sites; s++){
       // Call genotypes
       if(pars->call_geno)
 	call_geno(pars->in_geno_lkl[i][s], N_GENO, pars->in_logscale, pars->N_thresh, pars->call_thresh, 0);
@@ -281,7 +303,7 @@ int main (int argc, char** argv) {
   free_ptr((void**) dist_matrix, pars->n_ind);
   delete [] pth;
   // pars struct
-  free_ptr((void***) pars->in_geno_lkl, pars->n_ind, pars->n_sites+1);
+  free_ptr((void***) pars->in_geno_lkl, pars->n_ind, pars->n_sites);
   free_ptr((void**) pars->geno_lkl, pars->n_ind);
   free_ptr((void**) pars->ind_labels, pars->n_ind);
   //free_ptr((void*) pars->in_geno);
@@ -306,7 +328,7 @@ double gen_dist(params *p, uint64_t i1, uint64_t i2){
   Matrix<double> GL2 = alloc(1,N_GENO);
   int dim = GL1.y*GL2.y;
 
-  for(uint64_t s = 1; s <= p->n_sites; s++){
+  for(uint64_t s = 0; s < p->n_sites; s++){
     // Skip missing data
     if( p->pairwise_del && 
 	(miss_data(p->geno_lkl[i1][s]) ||
@@ -396,7 +418,7 @@ void rnd_map_data(params *pars, uint64_t n_blocks){
     rnd_block = (uint64_t) floor( draw_rnd(pars->rnd_gen, 0, n_blocks) );
 
     // And copy its content
-    for(uint64_t s = 1; s <= pars->boot_block_size; s++){
+    for(uint64_t s = 0; s < pars->boot_block_size; s++){
       block_s = block * pars->boot_block_size + s;
       rnd_block_s = rnd_block * pars->boot_block_size + s;
 
