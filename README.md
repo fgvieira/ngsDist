@@ -68,8 +68,15 @@ Executables are built into the main directory. If you wish to clean all binaries
 As input, `ngsDist` accepts both genotypes, genotype likelihoods (GL) or genotype posterior probabilities (GP). Genotypes must be input as gziped TSV with one row per site and one column per individual ![n_sites.n_ind](http://mathurl.com/ycxtfy8u.png) and genotypes coded as [-1, 0, 1, 2]. The file can have a header and an arbitrary number of columns preceeding the actual data (that will all be ignored), much like the Beagle file format ([link](http://faculty.washington.edu/browning/beagle/beagle.html)).
 As for GL and GP, `ngsDist` accepts both gzipd TSV and binary formats, but with 3 columns per individual ![3.n_sites.n_ind](http://mathurl.com/ycvy5fvx.png) and, in the case of binary, the GL/GP coded as doubles.
 
+If your data is in VCF format, you can convert it to BEAGLE using `bcftools` (to filter VCF for [e.g.] biallelic SNPs on autossomal chromosomes that PASS all filters) and `plink` (to convert to almost the correct format):
+
+    bcftools view -f PASS --types snps -m1 -M2 -r `seq -s, 1 22` INPUT.vcf.gz | plink --double-id --vcf /dev/stdin --recode A-transpose --out /tmp/plink
+    tail -n +2 /tmp/plink.traw | cut -f 1,4- | perl -p -e 's/\bNA\b/-1/g'
+    # Labels file
+    zgrep CHROM INPUT.vcf.gz | cut -f 10- | tr "\t" "\n" > INPUT.labels
+
 ### Evolutionary models
-`ngsDist` biggest strength is the possibility of taking genotype uncertainty (from genotype likelihoods) into account. At the moment it can only calculate "p-distance" and JC69 corrected distances, since more complex evolutionary model (e.g. K2P, HKY85) are currently under development.
+`ngsDist` biggest strength is the possibility of taking genotype uncertainty (from genotype likelihoods) into account. At the moment it can only calculate "p-distance" and JC69 corrected distances, but more complex evolutionary models (e.g. K2P, HKY85) are under development.
 
 ### Bootstrap Trees
 If you want branch support values on your tree, you can use `ngsDist` with the option `--n_boot_rep` and `--boot_block_size` to bootstrap the input data. `ngsDist` will output one distance matrix (the first) for the input full dataset, plus `--n_boot_rep` matrices for each of the bootstrap replicates. After, infer a tree for each of the matrices using the program of your choice and plot them. For example, using [FastME](http://atgc.lirmm.fr/fastme/) on a dataset with 5 bootstrap replicates:
