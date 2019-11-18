@@ -71,7 +71,7 @@ As for GL and GP, `ngsDist` accepts both gzipd TSV and binary formats, but with 
 If your data is in VCF format, you can convert it to BEAGLE using `bcftools` (to filter VCF for [e.g.] biallelic SNPs on autossomal chromosomes that PASS all filters) and `plink` (to convert to almost the correct format):
 
     bcftools view -f PASS --types snps -m1 -M2 -r `seq -s, 1 22` INPUT.vcf.gz | plink --double-id --vcf /dev/stdin --recode A-transpose --out /tmp/plink
-    tail -n +2 /tmp/plink.traw | cut -f 1,4- | perl -p -e 's/\bNA\b/-1/g'
+    tail -n +2 /tmp/plink.traw | cut -f 1,4- | perl -p -e 's/\bNA\b/-1/g' | gzip > INPUT.geno.gz
     # Labels file
     zgrep CHROM INPUT.vcf.gz | cut -f 10- | tr "\t" "\n" > INPUT.labels
 
