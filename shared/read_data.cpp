@@ -53,7 +53,7 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, bool *in_logscale
       n_fields = split(buf, (const char*) " \t", &t);
 
       // Check if header and skip
-      if(!n_fields){
+      if(!n_fields || (s == 0 && n_fields < n_ind * n_geno)){
 	fprintf(stderr, "> Header found! Skipping line...\n");
         if(s != 0){
           warn(__FUNCTION__, " header found but not on first line. Is this an error?");
@@ -63,8 +63,11 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, bool *in_logscale
 	continue;
       }
 
-      if(n_fields < n_ind * n_geno)
+      if(n_fields < n_ind * n_geno) {
+	fprintf(stderr, "\tline: %s\n\tt[0]: %f\n\tt[1]: %f\n", buf, t[0], t[1]);
+	fprintf(stderr, "\tn_line: %lu\n\tfields: %lu\n\tn_ind: %lu\n\tn_geno: %lu\n", s, n_fields, n_ind, n_geno);
 	error(__FUNCTION__, "wrong GENO file format. Less fields than expected!");
+      }
       
       // Use last "n_ind * n_geno" columns
       ptr = t + (n_fields - n_ind * n_geno);
@@ -106,40 +109,43 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, bool *in_logscale
 
 
 
-uint64_t read_split(char *in_file, uint64_t offset, uint64_t n_rows, char*** out, const char* sep){
-  int n_fields = 0;
+int read_split(char *in_file, char*** out, uint64_t* n_rows, uint64_t* n_cols, const char* sep){
+  char** buf;
 
   // Read file
-  char** buf = read_file(in_file, offset, n_rows, BUFF_LEN);
+  *n_cols = 0;
+  *n_rows = read_file(in_file, &buf);
   if(buf == NULL)
     error(__FUNCTION__, "cannot open file!");
 
   // Split string into fields
-  for(uint64_t i = 0; i < n_rows; i++) {
-    int n = split(buf[i], sep, &out[i]);
+  for(uint64_t i = 0; i < *n_rows; i++) {
+    uint64_t n = split(buf[i], sep, &out[i]);
     // If first field, save number of fields
-    if(n_fields == 0)
-      n_fields = n;
+    if(*n_cols == 0)
+      *n_cols = n;
     // Check if number if fields is always the same
-    if(n_fields != n)
+    if(*n_cols != n)
       error(__FUNCTION__, "invalid number of fields in file!");
   }
 
   // Clean-up
   delete [] buf;
-  return n_fields;
+  return 0;
 }
 
 
 
-double* read_pos(char *in_pos, uint64_t n_sites){
+double* read_dist(char *in_pos, uint64_t n_sites){
+  uint64_t n_fields = 0;
+
   // Allocate memory for POS
   double *pos_dist = init_ptr(n_sites, (double) INFINITY);
   // Allocate memory for FILE
   char ***buf = init_ptr(n_sites, 0, 0, (const char*) '\0');
 
   // Read file
-  uint64_t n_fields = read_split(in_pos, 0, n_sites, buf);
+  read_split(in_pos, buf, &n_sites, &n_fields);
   if(buf == NULL)
     error(__FUNCTION__, "cannot open file!");
   if(n_fields < 2)
@@ -150,7 +156,7 @@ double* read_pos(char *in_pos, uint64_t n_sites){
 
   for(uint64_t s = 0; s < n_sites; s++){
     // Check if header and skip
-    if(strtod(buf[s][1], NULL)==0){
+    if(strtod(buf[s][1], NULL) == 0){
       fprintf(stderr, "> Header found! Skipping line...\n");
       if(s != 0){
 	warn(__FUNCTION__, " header found but not on first line. Is this an error?");

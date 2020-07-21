@@ -18,8 +18,8 @@ typedef struct {
   uint64_t tot_sites;
   char *in_labels;
   bool in_labels_header;
-  char *in_alleles;
-  bool in_alleles_header;
+  char *in_pos;
+  bool in_pos_header;
   bool call_geno;
   double N_thresh;
   double call_thresh;
@@ -38,7 +38,7 @@ typedef struct {
   char **ind_labels;     // n_ind * BUFF_LEN
   double ***in_geno_lkl; // n_ind * n_sites+1 * N_GENO
   double ***geno_lkl;    // n_ind * n_sites+1 * N_GENO
-  char ***alleles;       // n_sites+1 * N_TSV_FIELDS * BUFF_LEN
+  char ***pos;           // n_sites+1 * N_TSV_FIELDS * BUFF_LEN
 
   threadpool_t *thread_pool;
 } params;

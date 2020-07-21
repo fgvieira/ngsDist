@@ -13,8 +13,8 @@ void init_pars(params *pars) {
   pars->tot_sites = 0;
   pars->in_labels = NULL;
   pars->in_labels_header = false;
-  pars->in_alleles = NULL;
-  pars->in_alleles_header = false;
+  pars->in_pos = NULL;
+  pars->in_pos_header = false;
   pars->call_geno = false;
   pars->N_thresh = 0;
   pars->call_thresh = 0;
@@ -60,8 +60,8 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
       {"tot_sites", required_argument, NULL, 'S'},
       {"labels", required_argument, NULL, 'L'},
       {"labelsH", required_argument, NULL, 'H'},
-      {"alleles", required_argument, NULL, 'a'},
-      {"allelesH", required_argument, NULL, 'A'},
+      {"pos", required_argument, NULL, 'a'},
+      {"posH", required_argument, NULL, 'A'},
       {"call_geno", no_argument, NULL, 'c'},
       {"N_thresh", required_argument, NULL, 'N'},
       {"call_thresh", required_argument, NULL, 'C'},
@@ -109,12 +109,12 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
       pars->in_labels_header = true;
       break;
     case 'a':
-      pars->in_alleles = optarg;
-      pars->in_alleles_header = false;
+      pars->in_pos = optarg;
+      pars->in_pos_header = false;
       break;
     case 'A':
-      pars->in_alleles = optarg;
-      pars->in_alleles_header = true;
+      pars->in_pos = optarg;
+      pars->in_pos_header = true;
       break;
     case 'c':
       pars->call_geno = true;
@@ -129,6 +129,7 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
       break;
     case 'D':
       pars->pairwise_del = true;
+      break;
     case 'd':
       // Freedman AH et al. 2014 (eq 8.2)
       pars->score[1][1] = 0.5;
@@ -164,7 +165,7 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
 
   if(pars->verbose >= 1) {
     fprintf(stderr, "==> Input Arguments:\n");
-    fprintf(stderr, "\tgeno: %s\n\tprobs: %s\n\tlog_scale: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\ttot_sites: %lu\n\tlabels: %s (%s header)\n\talleles: %s (%s header)\n\tcall_geno: %s\n\tN_thresh: %f\n\tcall_thresh: %f\n\tpairwise_del: %s\n\tavg_nuc_dist: %s\n\tevol_model: %s\n\tgeno_indep: %s\n\tn_boot_rep: %lu\n\tboot_block_size: %lu\n\tout: %s\n\tn_threads: %d\n\tverbose: %d\n\tseed: %d\n\tversion: %s (%s @ %s)\n\n",
+    fprintf(stderr, "\tgeno: %s\n\tprobs: %s\n\tlog_scale: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\ttot_sites: %lu\n\tlabels: %s (%s header)\n\tpositions: %s (%s header)\n\tcall_geno: %s\n\tN_thresh: %f\n\tcall_thresh: %f\n\tpairwise_del: %s\n\tavg_nuc_dist: %s\n\tevol_model: %s\n\tgeno_indep: %s\n\tn_boot_rep: %lu\n\tboot_block_size: %lu\n\tout: %s\n\tn_threads: %d\n\tverbose: %d\n\tseed: %d\n\tversion: %s (%s @ %s)\n\n",
 	    pars->in_geno,
 	    pars->in_probs ? "true":"false",
 	    pars->in_logscale ? "true":"false",
@@ -173,8 +174,8 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
 	    pars->tot_sites,
 	    pars->in_labels,
 	    pars->in_labels_header ? "WITH" : "WITHOUT",
-	    pars->in_alleles,
-	    pars->in_alleles_header ? "WITH" : "WITHOUT",
+	    pars->in_pos,
+	    pars->in_pos_header ? "WITH" : "WITHOUT",
 	    pars->call_geno ? "true":"false",
 	    pars->N_thresh,
 	    pars->call_thresh,

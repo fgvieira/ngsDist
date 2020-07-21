@@ -52,8 +52,8 @@ double logsum(double, double, double);
 double logsum(double, double, double, double);
 void chomp(char*);
 gzFile open_gzfile(const char*, const char*, uint64_t = 10000);
-char **read_file(const char*, uint64_t, uint64_t, uint64_t);
-double **read_file(const char*, uint64_t, uint64_t, int, uint64_t);
+uint64_t read_file(const char*, char***, uint64_t = 0, uint64_t = INF, uint64_t = BUFF_LEN);
+//double **read_file(const char*, uint64_t, uint64_t, int, uint64_t);
 
 int split(char*, const char*, int**);
 int split(char*, const char*, float**);
@@ -97,6 +97,6 @@ void calc_HWE(double*, double, double, bool = true);
 double est_maf(uint64_t, double**, double, bool = false);
 double est_maf(uint64_t, double**, double*, bool = false);
 
-uint64_t haplo_freq(double*, double*, uint64_t*, uint64_t*, double**, double**, double, double, uint64_t, bool, bool = true);
+uint64_t haplo_freq(double*, double*, uint64_t*, double**, double**, double, double, uint64_t, bool, bool = true);
 uint64_t pair_freq_iter(double*, double**, double**, uint64_t, bool);
 uint64_t pair_freq_iter_log(double*, double**, double**, uint64_t, bool);

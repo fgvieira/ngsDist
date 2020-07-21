@@ -22,7 +22,7 @@
 #include "ngsDist.hpp"
 #include "emOptim2.cpp"
 
-char const* version = "1.0.8";
+char const* version = "1.0.9";
 
 void rnd_map_data(params *pars, uint64_t n_blocks);
 
@@ -30,6 +30,7 @@ int main (int argc, char** argv) {
   /////////////////////
   // Parse Arguments //
   /////////////////////
+  uint64_t n_lines, n_fields;
   params* pars = new params;
   init_pars(pars);
   parse_cmd_args(pars, argc, argv);
@@ -102,10 +103,9 @@ int main (int argc, char** argv) {
   if(pars->in_labels){
     if(pars->verbose >= 1)
       fprintf(stderr, "==> Reading labels\n");
-
-    pars->ind_labels = read_file(pars->in_labels, (pars->in_labels_header ? 1 : 0), pars->n_ind, BUFF_LEN);
-    if(pars->ind_labels == NULL)
-      error(__FUNCTION__, "cannot open labels file!");
+    n_lines = read_file(pars->in_labels, &pars->ind_labels);
+    if(n_lines != pars->n_ind)
+      error(__FUNCTION__, "invalid LABELS file!");
 
     // Fix labels...
     char* ptr;
@@ -129,21 +129,21 @@ int main (int argc, char** argv) {
 
 
 
-  // Read ALLELES file
-  if(pars->in_alleles){
+  // Read POS file
+  if(pars->in_pos){
     if(pars->verbose >= 1)
-      fprintf(stderr, "==> Reading alleles\n");
+      fprintf(stderr, "==> Reading positions file\n");
 
     // Allocate memory
-    pars->alleles = init_ptr(pars->n_sites, 0, 0, (const char*) '\0');
+    pars->pos = init_ptr(pars->n_sites, 0, 0, (const char*) '\0');
 
-    uint64_t n_fields = read_split(pars->in_alleles, (pars->in_alleles_header ? 1 : 0), pars->n_sites, pars->alleles);
-    if(pars->alleles == NULL || n_fields < 2)
-      error(__FUNCTION__, "invalid alleles file!");
+    read_split(pars->in_pos, pars->pos, &n_lines, &n_fields);
+    if(n_lines != pars->n_sites || n_fields < 2)
+      error(__FUNCTION__, "invalid POS file!");
 
     if(pars->verbose >= 4)
       for(uint64_t s = 0; s < pars->n_sites; s++)
-	fprintf(stderr, "%s\t%s\t%s\t%s\n", pars->alleles[s][0], pars->alleles[s][1], pars->alleles[s][2], pars->alleles[s][3]);
+	fprintf(stderr, "%s\t%s\t%s\t%s\n", pars->pos[s][0], pars->pos[s][1], pars->pos[s][2], pars->pos[s][3]);
   }
 
 
@@ -362,7 +362,7 @@ double gen_dist(params *p, uint64_t i1, uint64_t i2){
   }
 
   if(p->verbose >=3)
-    fprintf(stderr, "\tFound %f differences out of %lu valid sites (%f) between %s (ind %lu) and %s (ind %lu)!\n", dist, cnt, dist/(double) cnt, p->ind_labels[i1], i1, p->ind_labels[i2], i2);
+    fprintf(stderr, "\tDistance of %f from %lu valid sites (%f) between %s (ind %lu) and %s (ind %lu)!\n", dist, cnt, dist/(double) cnt, p->ind_labels[i1], i1, p->ind_labels[i2], i2);
 
   dalloc(GL1, 1);
   dalloc(GL2, 1);
