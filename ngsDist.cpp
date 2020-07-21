@@ -103,7 +103,7 @@ int main (int argc, char** argv) {
   if(pars->in_labels){
     if(pars->verbose >= 1)
       fprintf(stderr, "==> Reading labels\n");
-    n_lines = read_file(pars->in_labels, &pars->ind_labels);
+    n_lines = read_file(pars->in_labels, &pars->ind_labels, (pars->in_labels_header ? 1 : 0));
     if(n_lines != pars->n_ind)
       error(__FUNCTION__, "invalid LABELS file!");
 
@@ -137,7 +137,9 @@ int main (int argc, char** argv) {
     // Allocate memory
     pars->pos = init_ptr(pars->n_sites, 0, 0, (const char*) '\0');
 
-    read_split(pars->in_pos, pars->pos, &n_lines, &n_fields);
+    // Read and split file
+    read_split(pars->in_pos, pars->pos, &n_lines, &n_fields, (pars->in_pos_header ? 1 : 0));
+
     if(n_lines != pars->n_sites || n_fields < 2)
       error(__FUNCTION__, "invalid POS file!");
 

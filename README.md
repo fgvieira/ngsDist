@@ -44,12 +44,13 @@ Executables are built into the main directory. If you wish to clean all binaries
 
 #### Parameters
 * `--geno FILE`: input file with genotypes, genotype likelihoods or genotype posterior probabilities.
+* `--probs`: is the input genotype probabilities (likelihoods or posteriors)?
+* `--log_scale`: Is the input in log-scale?.
 * `--n_ind INT`: sample size (number of individuals).
 * `--n_sites INT`: number of sites in input file.
 * `--tot_sites INT`: total number of sites in dataset.
-* `--labels FILE`: labels, one per line, of the input sequences.
-* `--probs`: is the input genotype probabilities (likelihoods or posteriors)?
-* `--log_scale`: Ii the input in log-scale?.
+* `--labels(H) FILE`: labels, one per line, of the input sequences; `--labelsH` assumes there is a header.
+* `--pos(H) FILE`: position info (chr, pos, allele1, allele2), one per line, of the input sites; `--posH` assumes there is a header (required for more complex evolutionary models).
 * `--call_geno`: call genotypes before running analyses.
 * `--N_thresh DOUBLE`: minimum threshold to consider site; missing data if otherwise (assumes -call_geno) 
 * `--call_thresh DOUBLE`: minimum threshold to call genotype; left as is if otherwise (assumes -call_geno)
@@ -76,7 +77,7 @@ If your data is in VCF format, you can convert it to BEAGLE using `bcftools` (to
     zgrep CHROM INPUT.vcf.gz | cut -f 10- | tr "\t" "\n" > INPUT.labels
 
 ### Evolutionary models
-`ngsDist` biggest strength is the possibility of taking genotype uncertainty (from genotype likelihoods) into account. At the moment it can only calculate "p-distance" and JC69 corrected distances, but more complex evolutionary models (e.g. K2P, HKY85) are under development.
+`ngsDist` strength is the possibility of taking genotype uncertainty (from genotype likelihoods) into account but, at the moment, it can only calculate simple "p-distance" and JC69 corrected distances. More complex evolutionary models (e.g. K2P, HKY85) are under development.
 
 ### Bootstrap Trees
 If you want branch support values on your tree, you can use `ngsDist` with the option `--n_boot_rep` and `--boot_block_size` to bootstrap the input data. `ngsDist` will output one distance matrix (the first) for the input full dataset, plus `--n_boot_rep` matrices for each of the bootstrap replicates. After, infer a tree for each of the matrices using the program of your choice and plot them. For example, using [FastME](http://atgc.lirmm.fr/fastme/) on a dataset with 5 bootstrap replicates:

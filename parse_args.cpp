@@ -211,6 +211,8 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
     error(__FUNCTION__, "can only call genotypes from likelihoods/probabilities!");
   if(pars->evol_model < 0 || pars->evol_model > 5)
     error(__FUNCTION__, "invalid correction method specified!");
+  if(pars->evol_model > 1 && pars->in_pos == NULL)
+    error(__FUNCTION__, "use of more complex evolutionary models requires position information!");
   if(pars->out == NULL)
     error(__FUNCTION__, "output prefix (--out) missing!");
   if(pars->n_threads < 1)
