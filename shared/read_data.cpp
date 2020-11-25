@@ -42,8 +42,12 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, bool *in_logscale
       }
     }
     else{
-      if( gzgets(in_geno_fh, buf, BUFF_LEN) == NULL)
-	error(__FUNCTION__, "cannot read GZip GENO file. Check GENO file and number of sites!");
+      if( gzgets(in_geno_fh, buf, BUFF_LEN) == NULL) {
+        if (gzeof(in_geno_fh))
+          error(__FUNCTION__, "GENO file at premature EOF. Check GENO file and number of sites!");
+        else
+	  error(__FUNCTION__, "cannot read GZip GENO file. Check GENO file and number of sites!");
+      }
       // Remove trailing newline
       chomp(buf);
       // Check if empty
