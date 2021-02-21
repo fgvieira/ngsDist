@@ -25,7 +25,7 @@ void init_pars(params *pars) {
   pars->score[0][0] = pars->score[1][1] = pars->score[2][2] = 0; 
   pars->score[0][1] = pars->score[1][0] = pars->score[1][2] = pars->score[2][1] = 0.5; 
   pars->score[0][2] = pars->score[2][0] = 1; 
-  pars->evol_model = 0;
+  pars->evol_model = 1;
   pars->indep_geno = false;
   pars->n_boot_rep = 0;
   pars->boot_block_size = 1;
@@ -38,7 +38,8 @@ void init_pars(params *pars) {
 
 
 // Supported evolutionary models
-const char* evol_model[] = {"None", // p-distance
+const char* evol_model[] = {"Raw p-distance", // Raw p-distance
+			    "Log transf. p-distance", // Logarithmic transformed p-distance
 			    "JC69", 
 			    "K80", // JC69 + (transiton rates != transversions rates)
 			    "F81", // JC69 + (base freqs != 0.25)
@@ -209,9 +210,9 @@ void parse_cmd_args(params* pars, int argc, char** argv) {
     error(__FUNCTION__, "cannot specify total number of sites (--tot_sites) with pairwise deletion (--pairwise_del)!");
   if(pars->call_geno && !pars->in_probs)
     error(__FUNCTION__, "can only call genotypes from likelihoods/probabilities!");
-  if(pars->evol_model < 0 || pars->evol_model > 5)
+  if(pars->evol_model < 0 || pars->evol_model > 6)
     error(__FUNCTION__, "invalid correction method specified!");
-  if(pars->evol_model > 1 && pars->in_pos == NULL)
+  if(pars->evol_model > 2 && pars->in_pos == NULL)
     error(__FUNCTION__, "use of more complex evolutionary models requires position information!");
   if(pars->out == NULL)
     error(__FUNCTION__, "output prefix (--out) missing!");

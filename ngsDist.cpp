@@ -22,7 +22,7 @@
 #include "ngsDist.hpp"
 #include "emOptim2.cpp"
 
-char const* version = "1.0.9";
+char const* version = "1.0.10";
 
 void rnd_map_data(params *pars, uint64_t n_blocks);
 
@@ -376,21 +376,24 @@ double gen_dist(params *p, uint64_t i1, uint64_t i2){
   dist /= (double) cnt;
   // Evolutionary model
   if(p->evol_model == 0) {
+    // Raw p-distance
+    dist = dist;
+  } else if(p->evol_model == 1) {
     // Logarithmic transformation (log(1-d)) to make distance additive (assuming constant Ne) and avoid violating minimum evolution and NJ assumptions.
     dist = -log(1-dist);
-  } else if(p->evol_model == 1) {
+  } else if(p->evol_model == 2) {
     // JC69
     dist = -log(1 - (dist * 4/3)) * 3/4;
-  } else if(p->evol_model == 2) {
+  } else if(p->evol_model == 3) {
     // K80
     error(__FUNCTION__, "K80 model not yet supported");
-  } else if(p->evol_model == 3) {
+  } else if(p->evol_model == 4) {
     // F81
     error(__FUNCTION__, "F81 model not yet supported");
-  } else if(p->evol_model == 4) {
+  } else if(p->evol_model == 5) {
     // HKY85
     error(__FUNCTION__, "HKY85 model not yet supported");
-  } else if(p->evol_model == 5) {
+  } else if(p->evol_model == 6) {
     // TN93
     error(__FUNCTION__, "TN93 model not yet supported");
   } else {
