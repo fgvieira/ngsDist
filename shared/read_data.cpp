@@ -28,8 +28,12 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, bool *in_logscale
   for(uint64_t s = 0; s < n_sites; s++){
     if(in_bin){
       for(uint64_t i = 0; i < n_ind; i++){
-	if( gzread(in_geno_fh, geno[i][s], N_GENO * sizeof(double)) != N_GENO * sizeof(double) )
-	  error(__FUNCTION__, "cannot read binary GENO file. Check GENO file and number of sites!");
+	if( gzread(in_geno_fh, geno[i][s], N_GENO * sizeof(double)) != N_GENO * sizeof(double) ){
+	  if (gzeof(in_geno_fh))
+	    error(__FUNCTION__, "GENO file at premature EOF. Check GENO file and number of sites!");
+	  else
+	    error(__FUNCTION__, "cannot read binary GENO file. Check GENO file and number of sites!");
+	}
 	if(!*in_logscale)
 	  conv_space(geno[i][s], N_GENO, log);
 	// Normalize GL
@@ -42,7 +46,7 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, bool *in_logscale
       }
     }
     else{
-      if( gzgets(in_geno_fh, buf, BUFF_LEN) == NULL) {
+      if( gzgets(in_geno_fh, buf, BUFF_LEN) == NULL){
         if (gzeof(in_geno_fh))
           error(__FUNCTION__, "GENO file at premature EOF. Check GENO file and number of sites!");
         else
